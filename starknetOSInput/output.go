@@ -5,11 +5,10 @@ import (
 
 	"github.com/NethermindEth/juno/core"
 	"github.com/NethermindEth/juno/core/felt"
-	"github.com/NethermindEth/juno/rpc"
 )
 
 // Note: assumes the block and state have already been stored
-func PopulateOSInput(block core.Block, handler *rpc.Handler, reader core.StateHistoryReader, execInfo []TransactionExecutionInfo) (*StarknetOsInput, error) {
+func PopulateOSInput(block core.Block, reader core.StateHistoryReader, execInfo []TransactionExecutionInfo) (*StarknetOsInput, error) {
 	osinput := &StarknetOsInput{}
 
 	// Todo
@@ -30,16 +29,17 @@ func PopulateOSInput(block core.Block, handler *rpc.Handler, reader core.StateHi
 
 		switch decTxn := tx.(type) {
 		case *core.DeclareTransaction:
-			class, err := handler.Class(rpc.BlockID{Hash: block.Hash}, *decTxn.ClassHash)
+			decClass, err := reader.Class(decTxn.ClassHash)
 			if err != nil {
-				return nil, errors.New(err.Message) // Todo: hanlde error correctly
+				return nil, err
 			}
-			if class.Program != "" {
-				depCompClass := AdaptClassToDeprecatedCompiledClass(class)
-				osinput.DeprecatedCompiledClasses[*decTxn.ClassHash] = depCompClass
-			} else {
-				compClass := AdaptClassToCompiledClass(class)
-				osinput.CompiledClasses[*decTxn.ClassHash] = compClass
+			switch class := decClass.Class.(type) {
+			case *core.Cairo0Class:
+				osinput.DeprecatedCompiledClasses[*decTxn.ClassHash] = *class
+			case *core.Cairo1Class:
+				osinput.CompiledClasses[*decTxn.ClassHash] = *class.Compiled
+			default:
+				return nil, errors.New("unknown class type")
 			}
 		}
 	}
@@ -56,13 +56,6 @@ func PopulateOSInput(block core.Block, handler *rpc.Handler, reader core.StateHi
 
 	osinput.BlockHash = *block.Hash
 	return osinput, nil
-}
-
-func AdaptClassToDeprecatedCompiledClass(class *rpc.Class) core.Cairo0Class {
-	panic("Todo")
-}
-func AdaptClassToCompiledClass(class *rpc.Class) core.CompiledClass {
-	panic("Todo")
 }
 
 func loadExampleStarknetOSConfig() StarknetGeneralConfig {
