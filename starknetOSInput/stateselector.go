@@ -153,7 +153,7 @@ func get_state_selector_calls(calls []*CallInfo, generalConfig *StarknetGeneralC
 			callAddress = *call.CodeAddress
 		}
 		if call.ClassHash == nil {
-			return nil, errors.New("Class hash is missing from call info")
+			return nil, errors.New("class hash is missing from call info")
 		}
 		callSelector := StateSelector{
 			ContractAddresses: []felt.Felt{call.ContractAddress, callAddress},

@@ -9,7 +9,7 @@ import (
 )
 
 // Note: assumes the block and state have already been stored
-func PopulateOSInput(block core.Block, handler *rpc.Handler, execInfo []TransactionExecutionInfo) (*StarknetOsInput, error) {
+func PopulateOSInput(block core.Block, handler *rpc.Handler, reader core.StateHistoryReader, execInfo []TransactionExecutionInfo) (*StarknetOsInput, error) {
 	osinput := &StarknetOsInput{}
 
 	// Todo
@@ -44,9 +44,7 @@ func PopulateOSInput(block core.Block, handler *rpc.Handler, execInfo []Transact
 		}
 	}
 
-	// Todo: ClassHashToCompiledClassHash
-	classHashToCompiledClassHash := getClassHashToCompiledClassHash(handler, stateSelector.ContractAddresses)
-	osinput.ClassHashToCompiledClassHash = classHashToCompiledClassHash
+	osinput.ClassHashToCompiledClassHash, err = getClassHashToCompiledClassHash(reader, stateSelector.ClassHashes)
 
 	// Todo: CompiledClassVisitedPcs??
 
@@ -96,10 +94,20 @@ func loadExampleStarknetOSConfig() StarknetGeneralConfig {
 	}
 }
 
-// Todo: using handler as proxy for state access
-func getClassHashToCompiledClassHash(handler *rpc.Handler, classHashes []felt.Felt) map[felt.Felt]felt.Felt {
-	// Todo: Given access to the class trie, and a set of classhashes, return the associated compiled class hashes
-	panic("unimplemented")
+func getClassHashToCompiledClassHash(reader core.StateHistoryReader, classHashes []felt.Felt) (map[felt.Felt]felt.Felt, error) {
+	classHashToCompiledClassHash := map[felt.Felt]felt.Felt{}
+	for _, classHash := range classHashes {
+		decClass, err := reader.Class(&classHash)
+		if err != nil {
+			return nil, err
+		}
+		switch t := decClass.Class.(type) {
+		case *core.Cairo1Class:
+			classHashToCompiledClassHash[classHash] = *t.Compiled.Hash()
+		}
+	}
+	return classHashToCompiledClassHash, nil
+
 }
 
 func getContractStateCommitmentInfo() CommitmentInfo {
