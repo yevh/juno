@@ -51,14 +51,14 @@ type TransactionExecutionInfo struct {
 type ResourcesMapping map[string]int
 
 type CallInfo struct {
-	CallerAddress       int64
+	CallerAddress       felt.Felt
 	CallType            *CallType
 	ContractAddress     felt.Felt
 	ClassHash           *felt.Felt
-	EntryPointSelector  *int64
+	EntryPointSelector  felt.Felt
 	EntryPointType      *EntryPointType
-	Calldata            []int64
-	GasConsumed         int64
+	Calldata            []felt.Felt
+	GasConsumed         felt.Felt
 	FailureFlag         int64
 	Retdata             []int64
 	ExecutionResources  core.ExecutionResources

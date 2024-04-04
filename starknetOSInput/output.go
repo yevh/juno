@@ -140,7 +140,7 @@ func getContracts(reader core.StateHistoryReader, contractAddresses []felt.Felt)
 			ContractHash: *hash,
 			StorageCommitmentTree: PatriciaTree{
 				Root:   *root,
-				Height: 251, // Todo: Just leave hard coded?
+				Height: 251, // Todo: Just leave hardcoded?
 			},
 			Nonce: *nonce,
 		}
