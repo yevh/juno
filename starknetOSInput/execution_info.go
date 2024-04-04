@@ -23,7 +23,7 @@ type VMParameters struct {
 	UseBlobData     bool
 }
 
-func executeTransactions(vmParams *VMParameters) (*[]TransactionExecutionInfo, error) {
+func getTxnExecInfo(vmParams *VMParameters) (*[]TransactionExecutionInfo, error) {
 	_, _, traces, err := vm.New(nil).Execute(
 		vmParams.Txns,
 		vmParams.DeclaredClasses,
