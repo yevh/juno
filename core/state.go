@@ -39,6 +39,7 @@ type StateReader interface {
 	ContractClassHash(addr *felt.Felt) (*felt.Felt, error)
 	ContractNonce(addr *felt.Felt) (*felt.Felt, error)
 	ContractStorage(addr, key *felt.Felt) (*felt.Felt, error)
+	ContractStorageRoot(addr *felt.Felt) (*felt.Felt, error) // Todo: add tests
 	Class(classHash *felt.Felt) (*DeclaredClass, error)
 }
 
@@ -83,6 +84,11 @@ func (s *State) ContractNonce(addr *felt.Felt) (*felt.Felt, error) {
 // ContractStorage returns value of a key in the storage of the contract at the given address.
 func (s *State) ContractStorage(addr, key *felt.Felt) (*felt.Felt, error) {
 	return ContractStorage(addr, key, s.txn)
+}
+
+// ContractStorageRoot returns the storage root of the contract at the given address.
+func (s *State) ContractStorageRoot(addr *felt.Felt) (*felt.Felt, error) {
+	return ContractRoot(addr, s.txn)
 }
 
 // Root returns the state commitment.

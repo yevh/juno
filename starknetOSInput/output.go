@@ -48,9 +48,11 @@ func PopulateOSInput(block core.Block, reader core.StateHistoryReader, execInfo 
 
 	// Todo: CompiledClassVisitedPcs??
 
-	// Todo: contracts
-	contracts := getContracts(stateSelector.ContractAddresses)
-	osinput.Contracts = contracts
+	contractStates, err := getContracts(reader, stateSelector.ContractAddresses)
+	if err != nil {
+		return nil, err
+	}
+	osinput.Contracts = contractStates
 
 	osinput.GeneralConfig = loadExampleStarknetOSConfig()
 
@@ -119,8 +121,29 @@ func getClassStateCommitmentInfo() CommitmentInfo {
 	panic("unimplemented")
 }
 
-func getContracts(contractAddresses []felt.Felt) map[felt.Felt]ContractState {
-	// Todo: given a batch of transactions, collect the set of ContractState's
-	// for every contract that the contract touched
-	panic("unimplemented")
+func getContracts(reader core.StateHistoryReader, contractAddresses []felt.Felt) (map[felt.Felt]ContractState, error) {
+	contractState := map[felt.Felt]ContractState{}
+	for _, addr := range contractAddresses {
+		root, err := reader.ContractStorageRoot(&addr)
+		if err != nil {
+			return nil, err
+		}
+		nonce, err := reader.ContractNonce(&addr)
+		if err != nil {
+			return nil, err
+		}
+		hash, err := reader.ContractClassHash(&addr)
+		if err != nil {
+			return nil, err
+		}
+		contractState[addr] = ContractState{
+			ContractHash: *hash,
+			StorageCommitmentTree: PatriciaTree{
+				Root:   *root,
+				Height: 251, // Todo: Just leave hard coded?
+			},
+			Nonce: *nonce,
+		}
+	}
+	return contractState, nil
 }

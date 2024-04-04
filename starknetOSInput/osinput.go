@@ -67,14 +67,14 @@ type StarknetOsConfig struct {
 }
 
 type ContractState struct {
-	ContractHash          []byte       `json:"contract_hash"`
+	ContractHash          felt.Felt    `json:"contract_hash"`
 	StorageCommitmentTree PatriciaTree `json:"storage_commitment_tree"`
 	Nonce                 felt.Felt    `json:"nonce"`
 }
 
 type PatriciaTree struct {
-	Root   string `json:"root"`
-	Height uint   `json:"height"`
+	Root   felt.Felt `json:"root"`
+	Height uint      `json:"height"`
 }
 
 type GasPriceBounds struct {
