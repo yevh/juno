@@ -1,6 +1,8 @@
 package osinput
 
 import (
+	"errors"
+
 	"github.com/NethermindEth/juno/core"
 	"github.com/NethermindEth/juno/core/felt"
 	"github.com/NethermindEth/juno/utils"
@@ -23,7 +25,10 @@ type VMParameters struct {
 	UseBlobData     bool
 }
 
-func getTxnExecInfo(vmParams *VMParameters) (*[]TransactionExecutionInfo, error) {
+func TxnExecInfo(vmParams *VMParameters) (*[]vm.TransactionTrace, error) {
+	if vmParams == nil {
+		return nil, errors.New("vmParameters can not be nil")
+	}
 	_, _, traces, err := vm.New(nil).Execute(
 		vmParams.Txns,
 		vmParams.DeclaredClasses,
@@ -40,15 +45,5 @@ func getTxnExecInfo(vmParams *VMParameters) (*[]TransactionExecutionInfo, error)
 		return nil, err
 	}
 
-	execInfos := []TransactionExecutionInfo{}
-	for _, trace := range traces {
-		execInfo := convertVMTraceToTxnExecInfo(trace)
-		execInfos = append(execInfos, execInfo)
-	}
-
-	return &execInfos, nil
-}
-
-func convertVMTraceToTxnExecInfo(trace vm.TransactionTrace) TransactionExecutionInfo {
-	panic("todo")
+	return &traces, nil
 }

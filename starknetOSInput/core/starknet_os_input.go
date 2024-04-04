@@ -9,11 +9,14 @@ import (
 
 // GenerateStarknetOSInput generates the data needed to run a CairoRunner given a block, state and vm parameters
 func GenerateStarknetOSInput(block *core.Block, reader core.StateHistoryReader, vmInput VMParameters) (*StarknetOsInput, error) {
-	txnExecInfo, err := getTxnExecInfo(&vmInput)
+	_, err := TxnExecInfo(&vmInput)
 	if err != nil {
 		return nil, err
 	}
-	return calculateOSInput(*block, reader, *txnExecInfo)
+
+	// Todo: update to use vm.TransactionTrace instead of TransactionExecutionInfo?
+	tmpTxnExecInfo := []TransactionExecutionInfo{}
+	return calculateOSInput(*block, reader, tmpTxnExecInfo)
 }
 
 // Todo: update to use vm.TransactionTrace instead of TransactionExecutionInfo?
