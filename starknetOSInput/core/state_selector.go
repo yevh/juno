@@ -40,7 +40,7 @@ func (s *StateSelector) deleteContractAddress(address felt.Felt) {
 
 type TransactionExecutionInfo struct {
 	ValidateInfo    *CallInfo
-	CallInfo        *CallInfo
+	CallInfo        *CallInfo // Execution call info
 	FeeTransferInfo *CallInfo
 	ActualFee       int64
 	ActualResources ResourcesMapping

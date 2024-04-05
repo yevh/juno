@@ -55,12 +55,13 @@ func TxnExecInfo(vmParams *VMParameters) (*[]TransactionExecutionInfo, error) {
 	return &txnExecInfo, nil
 }
 
-// Todo: finish fields that we need here
 func adaptVMTraceToTxnExecInfo(trace vm.TransactionTrace) TransactionExecutionInfo {
 	return TransactionExecutionInfo{
 		ValidateInfo:    adaptFnInvocationToCallInfo(*trace.ValidateInvocation),
 		FeeTransferInfo: adaptFnInvocationToCallInfo(*trace.FeeTransferInvocation),
+		CallInfo:        adaptFnInvocationToCallInfo(*trace.ExecuteInvocation.FunctionInvocation),
 		TxType:          (*rpc.TransactionType)(&trace.Type),
+		RevertError:     &trace.ExecuteInvocation.RevertReason,
 	}
 }
 
@@ -87,6 +88,7 @@ func adaptFnInvocationToCallInfo(fnInvoc vm.FunctionInvocation) *CallInfo {
 		panic("unknown CallType")
 	}
 
+	// Todo: Do we need any more of these fields??
 	return &CallInfo{
 		CallerAddress:      fnInvoc.CallerAddress,
 		CallType:           &callType,
