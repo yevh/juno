@@ -12,7 +12,6 @@ import (
 
 // Given a state and a set of transactions, execute the transactions in blockifier to return the traces
 // These traces make up the TransactionExecutionInfo that we need to populate the OSInputs
-
 type VMParameters struct {
 	Txns            []core.Transaction
 	DeclaredClasses []core.Class
@@ -46,7 +45,6 @@ func TxnExecInfo(vmParams *VMParameters) (*[]TransactionExecutionInfo, error) {
 		return nil, err
 	}
 
-	// convert traces to TransactionExecutionInfo
 	var txnExecInfo []TransactionExecutionInfo
 	for _, trace := range traces {
 		txnExecInfo = append(txnExecInfo, adaptVMTraceToTxnExecInfo(trace))

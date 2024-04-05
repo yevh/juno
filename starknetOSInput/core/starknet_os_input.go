@@ -8,17 +8,17 @@ import (
 )
 
 // GenerateStarknetOSInput generates the data needed to run a CairoRunner given a block, state and vm parameters
-func GenerateStarknetOSInput(block *core.Block, reader core.StateHistoryReader, vmInput VMParameters) (*StarknetOsInput, error) {
+func GenerateStarknetOSInput(block *core.Block, oldstate core.StateHistoryReader, newstate core.StateHistoryReader, vmInput VMParameters) (*StarknetOsInput, error) {
 	txnExecInfo, err := TxnExecInfo(&vmInput)
 	if err != nil {
 		return nil, err
 	}
 
-	return calculateOSInput(*block, reader, *txnExecInfo)
+	return calculateOSInput(*block, oldstate, newstate, *txnExecInfo)
 }
 
 // Todo: update to use vm.TransactionTrace instead of TransactionExecutionInfo?
-func calculateOSInput(block core.Block, reader core.StateHistoryReader, execInfo []TransactionExecutionInfo) (*StarknetOsInput, error) {
+func calculateOSInput(block core.Block, oldstate core.StateHistoryReader, newstate core.StateHistoryReader, execInfo []TransactionExecutionInfo) (*StarknetOsInput, error) {
 	osinput := &StarknetOsInput{}
 
 	// Todo: complete
@@ -28,7 +28,7 @@ func calculateOSInput(block core.Block, reader core.StateHistoryReader, execInfo
 	}
 
 	// Todo: commitment info
-	contractStateCommitmentInfo := getContractStateCommitmentInfo()
+	contractStateCommitmentInfo := getContractStateCommitmentInfo(oldstate, newstate)
 	classStateCommitmentInfo := getClassStateCommitmentInfo()
 	osinput.ContractStateCommitmentInfo = contractStateCommitmentInfo
 	osinput.ContractClassCommitmentInfo = classStateCommitmentInfo
@@ -39,7 +39,7 @@ func calculateOSInput(block core.Block, reader core.StateHistoryReader, execInfo
 
 		switch decTxn := tx.(type) {
 		case *core.DeclareTransaction:
-			decClass, err := reader.Class(decTxn.ClassHash)
+			decClass, err := oldstate.Class(decTxn.ClassHash)
 			if err != nil {
 				return nil, err
 			}
@@ -54,11 +54,11 @@ func calculateOSInput(block core.Block, reader core.StateHistoryReader, execInfo
 		}
 	}
 
-	osinput.ClassHashToCompiledClassHash, err = getClassHashToCompiledClassHash(reader, stateSelector.ClassHashes)
+	osinput.ClassHashToCompiledClassHash, err = getClassHashToCompiledClassHash(oldstate, stateSelector.ClassHashes)
 
 	// Todo: CompiledClassVisitedPcs??
 
-	contractStates, err := getContracts(reader, stateSelector.ContractAddresses)
+	contractStates, err := getContracts(oldstate, stateSelector.ContractAddresses)
 	if err != nil {
 		return nil, err
 	}
@@ -115,11 +115,9 @@ func getClassHashToCompiledClassHash(reader core.StateHistoryReader, classHashes
 
 }
 
-func getContractStateCommitmentInfo() CommitmentInfo {
-
+func getContractStateCommitmentInfo(oldstate core.StateHistoryReader, newstate core.StateHistoryReader) CommitmentInfo {
 	// Todo: Given the old and new contract Trie, collect all the
 	// nodes that were modified
-
 	panic("unimplemented")
 }
 
