@@ -86,7 +86,12 @@ func adaptFnInvocationToCallInfo(fnInvoc vm.FunctionInvocation) *CallInfo {
 		panic("unknown CallType")
 	}
 
-	// Todo: Do we need any more of these fields??
+	internalCalls := make([]*CallInfo, len(fnInvoc.Calls))
+	for i, call := range fnInvoc.Calls {
+		internalCalls[i] = adaptFnInvocationToCallInfo(call)
+	}
+
+	// Todo: Need code address (depreceated)?
 	return &CallInfo{
 		CallerAddress:      fnInvoc.CallerAddress,
 		CallType:           &callType,
@@ -95,6 +100,10 @@ func adaptFnInvocationToCallInfo(fnInvoc vm.FunctionInvocation) *CallInfo {
 		EntryPointSelector: *fnInvoc.EntryPointSelector,
 		EntryPointType:     &epType,
 		Calldata:           fnInvoc.Calldata,
+		InternalCalls:      internalCalls,
+		// https://github.com/starkware-libs/cairo-lang/blob/v0.12.3/src/starkware/starknet/business_logic/execution/objects.py#L305-L308
+		// CodeAddress:         nil, // Not present in FunctionInvocation
+
 		// GasConsumed:         0,   // Not present in FunctionInvocation
 		// FailureFlag:         0,   // Not present in FunctionInvocation
 		// Retdata:             nil, // Not present in FunctionInvocation
@@ -103,7 +112,6 @@ func adaptFnInvocationToCallInfo(fnInvoc vm.FunctionInvocation) *CallInfo {
 		// L2ToL1Messages:     fi.Messages,				// Todo: Do we need this?
 		// StorageReadValues:   nil, // Not present in FunctionInvocation
 		// AccessedStorageKeys: nil, // Not present in FunctionInvocation
-		// InternalCalls: internalCalls,				// Todo: Do we need this?
-		// CodeAddress:         nil, // Not present in FunctionInvocation
+
 	}
 }

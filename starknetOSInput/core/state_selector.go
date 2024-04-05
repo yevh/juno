@@ -104,7 +104,7 @@ func get_os_state_selector(
 	if err != nil {
 		return nil, err
 	}
-	executionStateSelector, err := get_state_seelctor_execution_info(executionInfos, generalConfig)
+	executionStateSelector, err := get_state_selector_execution_info(executionInfos, generalConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func get_os_state_selector(
 	return transactionStateSelector.union(executionStateSelector).union(reservedStateSelector), nil
 }
 
-func get_state_seelctor_execution_info(executionInfos []TransactionExecutionInfo, generalConfig *StarknetGeneralConfig) (*StateSelector, error) {
+func get_state_selector_execution_info(executionInfos []TransactionExecutionInfo, generalConfig *StarknetGeneralConfig) (*StateSelector, error) {
 	contractAddresses := []felt.Felt{}
 	classHashes := []felt.Felt{}
 	for _, execInfo := range executionInfos {
@@ -226,7 +226,7 @@ func get_state_selector_transaction(txn *core.Transaction, generalConfig *Starkn
 	case *core.DeployAccountTransaction:
 		return get_state_selector_deploy_account(t, generalConfig)
 	default:
-		return nil, errors.New("Unknown transaction type")
+		return nil, errors.New("unknown transaction type")
 	}
 
 }
