@@ -5,6 +5,7 @@ import (
 
 	"github.com/NethermindEth/juno/core"
 	"github.com/NethermindEth/juno/core/felt"
+	"github.com/NethermindEth/juno/rpc"
 	"github.com/NethermindEth/juno/utils"
 	"github.com/NethermindEth/juno/vm"
 )
@@ -25,7 +26,7 @@ type VMParameters struct {
 	UseBlobData     bool
 }
 
-func TxnExecInfo(vmParams *VMParameters) (*[]vm.TransactionTrace, error) {
+func TxnExecInfo(vmParams *VMParameters) (*[]TransactionExecutionInfo, error) {
 	if vmParams == nil {
 		return nil, errors.New("vmParameters can not be nil")
 	}
@@ -45,5 +46,64 @@ func TxnExecInfo(vmParams *VMParameters) (*[]vm.TransactionTrace, error) {
 		return nil, err
 	}
 
-	return &traces, nil
+	// convert traces to TransactionExecutionInfo
+	var txnExecInfo []TransactionExecutionInfo
+	for _, trace := range traces {
+		txnExecInfo = append(txnExecInfo, adaptVMTraceToTxnExecInfo(trace))
+	}
+
+	return &txnExecInfo, nil
+}
+
+// Todo: finish fields that we need here
+func adaptVMTraceToTxnExecInfo(trace vm.TransactionTrace) TransactionExecutionInfo {
+	return TransactionExecutionInfo{
+		ValidateInfo:    adaptFnInvocationToCallInfo(*trace.ValidateInvocation),
+		FeeTransferInfo: adaptFnInvocationToCallInfo(*trace.FeeTransferInvocation),
+		TxType:          (*rpc.TransactionType)(&trace.Type),
+	}
+}
+
+func adaptFnInvocationToCallInfo(fnInvoc vm.FunctionInvocation) *CallInfo {
+	var epType EntryPointType
+	switch fnInvoc.EntryPointType {
+	case "External":
+		epType = External
+	case "L1Handler":
+		epType = L1Handler
+	case "Constructor":
+		epType = Constructor
+	default:
+		panic("unknown EntryPointType")
+	}
+
+	var callType CallType
+	switch fnInvoc.CallType {
+	case "Call":
+		callType = Call
+	case "Delegate":
+		callType = Delegate
+	default:
+		panic("unknown CallType")
+	}
+
+	return &CallInfo{
+		CallerAddress:      fnInvoc.CallerAddress,
+		CallType:           &callType,
+		ContractAddress:    fnInvoc.ContractAddress,
+		ClassHash:          fnInvoc.ClassHash,
+		EntryPointSelector: *fnInvoc.EntryPointSelector,
+		EntryPointType:     &epType,
+		Calldata:           fnInvoc.Calldata,
+		// GasConsumed:         0,   // Not present in FunctionInvocation
+		// FailureFlag:         0,   // Not present in FunctionInvocation
+		// Retdata:             nil, // Not present in FunctionInvocation
+		// ExecutionResources: fi.ExecutionResources,	// Todo: Do we need this?
+		// Events:             fi.Events,				// Todo: Do we need this?
+		// L2ToL1Messages:     fi.Messages,				// Todo: Do we need this?
+		// StorageReadValues:   nil, // Not present in FunctionInvocation
+		// AccessedStorageKeys: nil, // Not present in FunctionInvocation
+		// InternalCalls: internalCalls,				// Todo: Do we need this?
+		// CodeAddress:         nil, // Not present in FunctionInvocation
+	}
 }
