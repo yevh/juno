@@ -47,6 +47,10 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 			NewRoot:   utils.HexToFelt(t, "0x0"),
 			BlockHash: &felt.Zero,
 			StateDiff: &core.StateDiff{
+				Nonces: map[felt.Felt]*felt.Felt{
+					*zeroHash: &felt.Zero,
+					*oneHash:  &felt.Zero,
+				},
 				DeclaredV0Classes: []*felt.Felt{zeroHash, oneHash},
 				DeclaredV1Classes: nil,
 			},
