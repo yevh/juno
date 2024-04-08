@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/NethermindEth/juno/core"
+	"github.com/NethermindEth/juno/core/felt"
 	"github.com/NethermindEth/juno/db/pebble"
 	"github.com/NethermindEth/juno/mocks"
 	"github.com/NethermindEth/juno/utils"
@@ -23,7 +24,7 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 	network := utils.Sepolia
 
 	testDB := pebble.NewMemTest(t)
-	txn, err := testDB.NewTransaction(false)
+	txn, err := testDB.NewTransaction(true)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, txn.Discard())
@@ -32,6 +33,27 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 	state := core.NewState(txn)
 	mockVM := mocks.NewMockVM(mockCtrl)
 	t.Run("empty inputs", func(t *testing.T) {
+
+		// Update the contract state trie to inc the contracts "0" and "1"
+		// These will always be checked for changes etc
+		zeroHash := utils.HexToFelt(t, "0x0")
+		oneHash := utils.HexToFelt(t, "0x1")
+		newClasses := map[felt.Felt]core.Class{
+			*zeroHash: &core.Cairo0Class{},
+			*oneHash:  &core.Cairo0Class{},
+		}
+		su := &core.StateUpdate{
+			OldRoot:   &felt.Zero,
+			NewRoot:   utils.HexToFelt(t, "0x0"),
+			BlockHash: &felt.Zero,
+			StateDiff: &core.StateDiff{
+				DeclaredV0Classes: []*felt.Felt{zeroHash, oneHash},
+				DeclaredV1Classes: nil,
+			},
+		}
+		err := state.Update(0, su, newClasses)
+		require.NoError(t, err)
+
 		vmParas := VMParameters{
 			Txns:            nil,
 			DeclaredClasses: nil,
@@ -50,7 +72,7 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		}
 		mockVM.EXPECT().Execute(vmParas.Txns, vmParas.DeclaredClasses, vmParas.PaidFeesOnL1,
 			vmParas.BlockInfo, state, vmParas.Network, vmParas.SkipChargeFee, vmParas.SkipValidate, vmParas.ErrOnRevert, vmParas.UseBlobData).Return(nil, nil, nil, nil)
-		_, err := GenerateStarknetOSInput(&block, state, state, mockVM, vmParas)
+		_, err = GenerateStarknetOSInput(&block, state, state, mockVM, vmParas)
 		require.NoError(t, err)
 	})
 }
