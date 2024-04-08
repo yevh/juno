@@ -27,9 +27,14 @@ func calculateOSInput(block core.Block, oldstate core.StateHistoryReader, newsta
 		return nil, err
 	}
 
+	classHashToCompiledClassHash, err := getClassHashToCompiledClassHash(oldstate, stateSelector.ClassHashes)
+	if err != nil {
+		return nil, err
+	}
+
 	// Todo: commitment info
-	contractStateCommitmentInfo := getContractStateCommitmentInfo(oldstate, newstate)
-	classStateCommitmentInfo := getClassStateCommitmentInfo()
+	contractStateCommitmentInfo := getContractStateCommitmentInfo(oldstate, newstate, stateSelector.ContractAddresses)
+	classStateCommitmentInfo := getClassStateCommitmentInfo(oldstate, newstate, classHashToCompiledClassHash)
 	osinput.ContractStateCommitmentInfo = contractStateCommitmentInfo
 	osinput.ContractClassCommitmentInfo = classStateCommitmentInfo
 
@@ -54,7 +59,7 @@ func calculateOSInput(block core.Block, oldstate core.StateHistoryReader, newsta
 		}
 	}
 
-	osinput.ClassHashToCompiledClassHash, err = getClassHashToCompiledClassHash(oldstate, stateSelector.ClassHashes)
+	osinput.ClassHashToCompiledClassHash, err = getInitialClassHashToCompiledClassHash(oldstate, classHashToCompiledClassHash)
 
 	// Todo: CompiledClassVisitedPcs??
 
@@ -115,18 +120,29 @@ func getClassHashToCompiledClassHash(reader core.StateHistoryReader, classHashes
 
 }
 
-func getContractStateCommitmentInfo(oldstate core.StateHistoryReader, newstate core.StateHistoryReader) CommitmentInfo {
-	// Todo: Given the old and new contract Trie, collect all the
-	// nodes that were modified
-	panic("unimplemented")
+func getInitialClassHashToCompiledClassHash(oldstate core.StateHistoryReader, classHashToCompiledClassHash map[felt.Felt]felt.Felt) (map[felt.Felt]felt.Felt, error) {
+	for range classHashToCompiledClassHash {
+		panic("unimplemented")
+	}
+	return nil, nil
 }
 
-func getClassStateCommitmentInfo() CommitmentInfo {
+func getContractStateCommitmentInfo(oldstate core.StateHistoryReader, newstate core.StateHistoryReader, contractAddresses []felt.Felt) CommitmentInfo {
+	// Todo: Given the old and new contract Trie, collect all the
+	// nodes that were modified
+	for range contractAddresses {
+		panic("unimplemented")
+	}
+	return CommitmentInfo{}
+}
 
+func getClassStateCommitmentInfo(oldstate core.StateHistoryReader, newstate core.StateHistoryReader, classHashToCompiledClassHash map[felt.Felt]felt.Felt) CommitmentInfo {
 	// Todo: Given the old and new class Trie, collect all the
 	// nodes that were modified
-
-	panic("unimplemented")
+	for range classHashToCompiledClassHash {
+		panic("unimplemented")
+	}
+	return CommitmentInfo{}
 }
 
 func getContracts(reader core.StateHistoryReader, contractAddresses []felt.Felt) (map[felt.Felt]ContractState, error) {
