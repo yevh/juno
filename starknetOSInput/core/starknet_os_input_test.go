@@ -1,7 +1,6 @@
 package osinput
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/NethermindEth/juno/core"
@@ -44,10 +43,15 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 			ErrOnRevert:     false,
 			UseBlobData:     false,
 		}
+		block := core.Block{
+			Header: &core.Header{
+				Hash: utils.HexToFelt(t, "0xdeadbeef"),
+			},
+		}
 		mockVM.EXPECT().Execute(vmParas.Txns, vmParas.DeclaredClasses, vmParas.PaidFeesOnL1,
 			vmParas.BlockInfo, state, vmParas.Network, vmParas.SkipChargeFee, vmParas.SkipValidate, vmParas.ErrOnRevert, vmParas.UseBlobData).Return(nil, nil, nil, nil)
-		osinput, err := GenerateStarknetOSInput(&core.Block{}, state, state, mockVM, vmParas)
-		fmt.Println(osinput, err)
+		_, err := GenerateStarknetOSInput(&block, state, state, mockVM, vmParas)
+		require.NoError(t, err)
 	})
 }
 
