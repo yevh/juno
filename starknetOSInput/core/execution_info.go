@@ -25,11 +25,11 @@ type VMParameters struct {
 	UseBlobData     bool
 }
 
-func TxnExecInfo(vmParams *VMParameters) (*[]TransactionExecutionInfo, error) {
+func TxnExecInfo(vm vm.VM, vmParams *VMParameters) (*[]TransactionExecutionInfo, error) {
 	if vmParams == nil {
 		return nil, errors.New("vmParameters can not be nil")
 	}
-	_, _, traces, err := vm.New(nil).Execute(
+	_, _, traces, err := vm.Execute(
 		vmParams.Txns,
 		vmParams.DeclaredClasses,
 		vmParams.PaidFeesOnL1,

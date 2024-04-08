@@ -1,7 +1,15 @@
 package osinput
 
 import (
+	"fmt"
 	"testing"
+
+	"github.com/NethermindEth/juno/core"
+	"github.com/NethermindEth/juno/db/pebble"
+	"github.com/NethermindEth/juno/mocks"
+	"github.com/NethermindEth/juno/utils"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 // Note: given the depreceated classes (dummy_token,dummy_account,token_for_testing)
@@ -10,7 +18,37 @@ import (
 // Given these two states+txns etc, we should be able to test GenerateStarknetOSInput (==get_os_hints).
 // The final goal is to compute a StarknetOsInput equivalent to testdata/os_input.json
 func TestGenerateStarknetOSInput(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	t.Cleanup(mockCtrl.Finish)
 
+	network := utils.Sepolia
+
+	testDB := pebble.NewMemTest(t)
+	txn, err := testDB.NewTransaction(false)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, txn.Discard())
+	})
+
+	state := core.NewState(txn)
+	mockVM := mocks.NewMockVM(mockCtrl)
+	t.Run("empty inputs", func(t *testing.T) {
+		vmParas := VMParameters{
+			Txns:            nil,
+			DeclaredClasses: nil,
+			PaidFeesOnL1:    nil,
+			State:           state,
+			Network:         &network,
+			SkipChargeFee:   false,
+			SkipValidate:    false,
+			ErrOnRevert:     false,
+			UseBlobData:     false,
+		}
+		mockVM.EXPECT().Execute(vmParas.Txns, vmParas.DeclaredClasses, vmParas.PaidFeesOnL1,
+			vmParas.BlockInfo, state, vmParas.Network, vmParas.SkipChargeFee, vmParas.SkipValidate, vmParas.ErrOnRevert, vmParas.UseBlobData).Return(nil, nil, nil, nil)
+		osinput, err := GenerateStarknetOSInput(&core.Block{}, state, state, mockVM, vmParas)
+		fmt.Println(osinput, err)
+	})
 }
 
 // func loadInitClasses() ([]core.Cairo0Class, []core.Cairo1Class, error) {

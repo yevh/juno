@@ -104,15 +104,18 @@ func get_os_state_selector(
 	if err != nil {
 		return nil, err
 	}
+
 	executionStateSelector, err := get_state_selector_execution_info(executionInfos, generalConfig)
 	if err != nil {
 		return nil, err
 	}
+
 	// Include reserved contract addresses
 	reservedStateSelector := &StateSelector{
 		ContractAddresses: []felt.Felt{*new(felt.Felt).SetUint64(0), *new(felt.Felt).SetUint64(1)},
 		ClassHashes:       []felt.Felt{},
 	}
+
 	// return union
 	return transactionStateSelector.union(executionStateSelector).union(reservedStateSelector), nil
 }
