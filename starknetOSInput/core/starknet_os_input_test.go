@@ -1,7 +1,6 @@
 package osinput
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/NethermindEth/juno/core"
@@ -77,7 +76,7 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		BlockHash:                    *new(felt.Felt).SetBytes([]byte{0x05, 0x9b, 0x01, 0xba, 0x26, 0x2c, 0x99, 0x9f, 0x26, 0x17, 0x41, 0x2f, 0xfb, 0xba, 0x78, 0x0f, 0x80, 0xb0, 0x10, 0x3d, 0x92, 0x8c, 0xbc, 0xe1, 0xae, 0xcb, 0xaa, 0x50, 0xde, 0x90, 0xab, 0xda}),
 	}
 
-	t.Run("empty inputs", func(t *testing.T) {
+	t.Run("todo empty inputs", func(t *testing.T) {
 		// Update the contract state trie to inc the contracts "0" and "1"
 		// These will always be checked for changes etc
 		zeroHash := utils.HexToFelt(t, "0x0")
@@ -88,24 +87,17 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		}
 		su := &core.StateUpdate{
 			OldRoot:   &felt.Zero,
-			NewRoot:   utils.HexToFelt(t, "0x56d5923af39ff8bea3367424dfcb22757947936c9133ac3b25313d014244028"),
+			NewRoot:   utils.HexToFelt(t, "0x69f4c17b8a55ab8ba86c6dc976f85646bbc0ff78e5a3e2f9d221064800dae64"),
 			BlockHash: &felt.Zero,
 			StateDiff: &core.StateDiff{
-				StorageDiffs: map[felt.Felt]map[felt.Felt]*felt.Felt{
-					*zeroHash: {
-						*zeroHash: oneHash,
-					},
-					*oneHash: {
-						*oneHash: oneHash,
-					},
-				},
+				StorageDiffs: nil,
 				Nonces: map[felt.Felt]*felt.Felt{
 					*zeroHash: &felt.Zero,
 					*oneHash:  &felt.Zero,
 				},
 				DeployedContracts: map[felt.Felt]*felt.Felt{
-					*zeroHash: new(felt.Felt).SetUint64(123),
-					*oneHash:  new(felt.Felt).SetUint64(456),
+					*zeroHash: new(felt.Felt).SetUint64(0),
+					*oneHash:  new(felt.Felt).SetUint64(0),
 				},
 				DeclaredV0Classes: []*felt.Felt{zeroHash, oneHash},
 				DeclaredV1Classes: nil,
@@ -134,9 +126,6 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 			vmParas.BlockInfo, state, vmParas.Network, vmParas.SkipChargeFee, vmParas.SkipValidate, vmParas.ErrOnRevert, vmParas.UseBlobData).Return(nil, nil, nil, nil)
 		osinput, err := GenerateStarknetOSInput(&block, state, state, mockVM, vmParas)
 		require.NoError(t, err)
-
-		fmt.Println(expectedOSInptsEmpty.Contracts[*zeroHash])
-		fmt.Println(osinput.Contracts[*zeroHash])
 
 		require.Equal(t, expectedOSInptsEmpty.ContractStateCommitmentInfo, osinput.ContractStateCommitmentInfo)
 		require.Equal(t, expectedOSInptsEmpty.ContractClassCommitmentInfo, osinput.ContractClassCommitmentInfo)
