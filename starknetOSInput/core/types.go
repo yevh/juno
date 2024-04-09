@@ -54,7 +54,7 @@ type StarknetGeneralConfig struct {
 	ValidateMaxNSteps       int                `json:"validate_max_n_steps"`
 	DefaultEthPriceInFri    felt.Felt          `json:"default_eth_price_in_fri"`
 	ConstantGasPrice        bool               `json:"constant_gas_price"`
-	SequencerAddress        felt.Felt          `json:"sequencer_address"`
+	SequencerAddress        *felt.Felt         `json:"sequencer_address"`
 	CairoResourceFeeWeights map[string]float64 `json:"cairo_resource_fee_weights"`
 	EnforceL1HandlerFee     bool               `json:"enforce_l1_handler_fee"`
 	UseKzgDa                bool               `json:"use_kzg_da"`

@@ -70,38 +70,40 @@ func calculateOSInput(block core.Block, oldstate core.StateHistoryReader, newsta
 	}
 	osinput.Contracts = contractStates
 
-	osinput.GeneralConfig = loadExampleStarknetOSConfig()
+	osinput.GeneralConfig = LoadExampleStarknetOSConfig()
 
 	osinput.BlockHash = *block.Hash
 	return osinput, nil
 }
 
-func loadExampleStarknetOSConfig() StarknetGeneralConfig {
-	seqAddr, _ := new(felt.Felt).SetString("0x6c95526293b61fa708c6cba66fd015afee89309666246952456ab970e9650aa")
-	feeTokenAddr, _ := new(felt.Felt).SetString("0x6c95526293b61fa708c6cba66fd015afee89309666246952456ab970e9650aa")
-	chainID := new(felt.Felt).SetBytes([]byte("SEPOLIA"))
+func LoadExampleStarknetOSConfig() StarknetGeneralConfig {
+	seqAddr, _ := new(felt.Felt).SetString("0xfb3d5e8dec6dfef87f2b48dd3fbe9a455ed188636f6638a8f8bce4555f7938")
+	feeTokenAddr, _ := new(felt.Felt).SetString("0x3400a86fdc294a70fac1cf84f81a2127419359096b846be9814786d4fc056b8")
 	return StarknetGeneralConfig{
 		StarknetOsConfig: StarknetOsConfig{
-			ChainID:         *chainID,
-			FeeTokenAddress: *feeTokenAddr,
+			ChainID:                   *new(felt.Felt).SetBytes([]byte{0x05, 0x9b, 0x01, 0xba, 0x26, 0x2c, 0x99, 0x9f, 0x26, 0x17, 0x41, 0x2f, 0xfb, 0xba, 0x78, 0x0f, 0x80, 0xb0, 0x10, 0x3d, 0x92, 0x8c, 0xbc, 0xe1, 0xae, 0xcb, 0xaa, 0x50, 0xde, 0x90, 0xab, 0xda}),
+			DeprecatedFeeTokenAddress: felt.Felt{},
+			FeeTokenAddress:           *feeTokenAddr,
 		},
-		InvokeTxMaxNSteps: 3000000,
-		ValidateMaxNSteps: 1000000,
-		ConstantGasPrice:  false,
-		SequencerAddress:  *seqAddr,
+		GasPriceBounds:       GasPriceBounds{},
+		InvokeTxMaxNSteps:    3000000,
+		ValidateMaxNSteps:    1000000,
+		DefaultEthPriceInFri: *new(felt.Felt),
+		ConstantGasPrice:     false,
+		SequencerAddress:     seqAddr,
 		CairoResourceFeeWeights: map[string]float64{
-			"poseidon_builtin":    0.0,
 			"n_steps":             1.0,
-			"ecdsa_builtin":       0.0,
-			"keccak_builtin":      0.0,
-			"range_check_builtin": 0.0,
-			"pedersen_builtin":    0.0,
 			"output_builtin":      0.0,
+			"pedersen_builtin":    0.0,
+			"range_check_builtin": 0.0,
+			"ecdsa_builtin":       0.0,
 			"bitwise_builtin":     0.0,
 			"ec_op_builtin":       0.0,
+			"keccak_builtin":      0.0,
+			"poseidon_builtin":    0.0,
 		},
 		EnforceL1HandlerFee: true,
-		UseKzgDa:            false,
+		UseKzgDa:            true,
 	}
 }
 

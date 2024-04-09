@@ -1,6 +1,7 @@
 package osinput
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/NethermindEth/juno/core"
@@ -32,8 +33,51 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 
 	state := core.NewState(txn)
 	mockVM := mocks.NewMockVM(mockCtrl)
-	t.Run("empty inputs", func(t *testing.T) {
 
+	// Run an empty state (excluding 0 and 1 contracts through the run_os.py)
+	exampleConfig := LoadExampleStarknetOSConfig()
+	expectedOSInptsEmpty := StarknetOsInput{
+		/// Todo: implement commitment facts logic and readd to tests
+		// ContractStateCommitmentInfo: CommitmentInfo{
+		// 	PreviousRoot:    *new(felt.Felt).SetUint64(0),
+		// 	UpdatedRoot:     *new(felt.Felt).SetUint64(0),
+		// 	TreeHeight:      251,
+		// 	CommitmentFacts: nil,
+		// },
+		// ContractClassCommitmentInfo: CommitmentInfo{
+		// 	PreviousRoot:    *new(felt.Felt).SetUint64(0),
+		// 	UpdatedRoot:     *new(felt.Felt).SetUint64(0),
+		// 	TreeHeight:      251,
+		// 	CommitmentFacts: nil,
+		// },
+		DeprecatedCompiledClasses: nil,
+		CompiledClasses:           nil,
+		CompiledClassVisitedPcs:   nil,
+		Contracts: map[felt.Felt]ContractState{
+			*new(felt.Felt).SetUint64(0): {
+				ContractHash: *new(felt.Felt).SetUint64(0),
+				StorageCommitmentTree: PatriciaTree{
+					Root:   *new(felt.Felt).SetUint64(0),
+					Height: 251,
+				},
+				Nonce: *new(felt.Felt).SetUint64(0),
+			},
+			*new(felt.Felt).SetUint64(1): {
+				ContractHash: *new(felt.Felt).SetUint64(0),
+				StorageCommitmentTree: PatriciaTree{
+					Root:   *new(felt.Felt).SetUint64(0),
+					Height: 251,
+				},
+				Nonce: *new(felt.Felt).SetUint64(0),
+			},
+		},
+		ClassHashToCompiledClassHash: nil,
+		GeneralConfig:                exampleConfig,
+		Transactions:                 nil,
+		BlockHash:                    *new(felt.Felt).SetBytes([]byte{0x05, 0x9b, 0x01, 0xba, 0x26, 0x2c, 0x99, 0x9f, 0x26, 0x17, 0x41, 0x2f, 0xfb, 0xba, 0x78, 0x0f, 0x80, 0xb0, 0x10, 0x3d, 0x92, 0x8c, 0xbc, 0xe1, 0xae, 0xcb, 0xaa, 0x50, 0xde, 0x90, 0xab, 0xda}),
+	}
+
+	t.Run("empty inputs", func(t *testing.T) {
 		// Update the contract state trie to inc the contracts "0" and "1"
 		// These will always be checked for changes etc
 		zeroHash := utils.HexToFelt(t, "0x0")
@@ -83,13 +127,27 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		}
 		block := core.Block{
 			Header: &core.Header{
-				Hash: utils.HexToFelt(t, "0xdeadbeef"),
+				Hash: utils.HexToFelt(t, "0x59b01ba262c999f2617412ffbba780f80b0103d928cbce1aecbaa50de90abda"), // Todo: this was just copied from the test data
 			},
 		}
 		mockVM.EXPECT().Execute(vmParas.Txns, vmParas.DeclaredClasses, vmParas.PaidFeesOnL1,
 			vmParas.BlockInfo, state, vmParas.Network, vmParas.SkipChargeFee, vmParas.SkipValidate, vmParas.ErrOnRevert, vmParas.UseBlobData).Return(nil, nil, nil, nil)
-		_, err = GenerateStarknetOSInput(&block, state, state, mockVM, vmParas)
+		osinput, err := GenerateStarknetOSInput(&block, state, state, mockVM, vmParas)
 		require.NoError(t, err)
+
+		fmt.Println(expectedOSInptsEmpty.Contracts[*zeroHash])
+		fmt.Println(osinput.Contracts[*zeroHash])
+
+		require.Equal(t, expectedOSInptsEmpty.ContractStateCommitmentInfo, osinput.ContractStateCommitmentInfo)
+		require.Equal(t, expectedOSInptsEmpty.ContractClassCommitmentInfo, osinput.ContractClassCommitmentInfo)
+		require.Equal(t, expectedOSInptsEmpty.DeprecatedCompiledClasses, osinput.DeprecatedCompiledClasses)
+		require.Equal(t, expectedOSInptsEmpty.CompiledClasses, osinput.CompiledClasses)
+		require.Equal(t, expectedOSInptsEmpty.CompiledClassVisitedPcs, osinput.CompiledClassVisitedPcs)
+		require.Equal(t, expectedOSInptsEmpty.Contracts, osinput.Contracts)
+		require.Equal(t, expectedOSInptsEmpty.ClassHashToCompiledClassHash, osinput.ClassHashToCompiledClassHash)
+		require.Equal(t, expectedOSInptsEmpty.GeneralConfig, osinput.GeneralConfig)
+		require.Equal(t, expectedOSInptsEmpty.Transactions, osinput.Transactions)
+		require.Equal(t, expectedOSInptsEmpty.BlockHash.String(), osinput.BlockHash.String())
 	})
 }
 
