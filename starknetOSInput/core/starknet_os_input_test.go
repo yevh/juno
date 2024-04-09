@@ -12,11 +12,6 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-// Note: given the depreceated classes (dummy_token,dummy_account,token_for_testing)
-// and initial transactions (deploy_token_tx, fund_account_tx, deploy_account_tx)
-// we should be able to build the same initial and new state as run_os.py
-// Given these two states+txns etc, we should be able to test GenerateStarknetOSInput (==get_os_hints).
-// The final goal is to compute a StarknetOsInput equivalent to testdata/os_input.json
 func TestGenerateStarknetOSInput(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
@@ -33,7 +28,6 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 	state := core.NewState(txn)
 	mockVM := mocks.NewMockVM(mockCtrl)
 
-	// Run an empty state (excluding 0 and 1 contracts through the run_os.py)
 	exampleConfig := LoadExampleStarknetOSConfig()
 	expectedOSInptsEmpty := StarknetOsInput{
 		/// Todo: implement commitment facts logic and readd to tests
@@ -76,9 +70,8 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		BlockHash:                    *new(felt.Felt).SetBytes([]byte{0x05, 0x9b, 0x01, 0xba, 0x26, 0x2c, 0x99, 0x9f, 0x26, 0x17, 0x41, 0x2f, 0xfb, 0xba, 0x78, 0x0f, 0x80, 0xb0, 0x10, 0x3d, 0x92, 0x8c, 0xbc, 0xe1, 0xae, 0xcb, 0xaa, 0x50, 0xde, 0x90, 0xab, 0xda}),
 	}
 
+	// Test data from run_os.py, with "empty" state (0 and 1 contracts), no transactions and no classes.
 	t.Run("todo empty inputs", func(t *testing.T) {
-		// Update the contract state trie to inc the contracts "0" and "1"
-		// These will always be checked for changes etc
 		zeroHash := utils.HexToFelt(t, "0x0")
 		oneHash := utils.HexToFelt(t, "0x1")
 		newClasses := map[felt.Felt]core.Class{
@@ -119,7 +112,7 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		}
 		block := core.Block{
 			Header: &core.Header{
-				Hash: utils.HexToFelt(t, "0x59b01ba262c999f2617412ffbba780f80b0103d928cbce1aecbaa50de90abda"), // Todo: this was just copied from the test data
+				Hash: utils.HexToFelt(t, "0x59b01ba262c999f2617412ffbba780f80b0103d928cbce1aecbaa50de90abda"),
 			},
 		}
 		mockVM.EXPECT().Execute(vmParas.Txns, vmParas.DeclaredClasses, vmParas.PaidFeesOnL1,

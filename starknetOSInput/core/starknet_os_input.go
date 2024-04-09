@@ -8,7 +8,7 @@ import (
 	"github.com/NethermindEth/juno/vm"
 )
 
-// GenerateStarknetOSInput generates the data needed to run a CairoRunner given a block, state and vm parameters
+// GenerateStarknetOSInput generates the starknet OS input, given a block, state and classes.
 func GenerateStarknetOSInput(block *core.Block, oldstate core.StateHistoryReader, newstate core.StateHistoryReader, vm vm.VM, vmInput VMParameters) (*StarknetOsInput, error) {
 	txnExecInfo, err := TxnExecInfo(vm, &vmInput)
 	if err != nil {
@@ -39,7 +39,6 @@ func calculateOSInput(block core.Block, oldstate core.StateHistoryReader, newsta
 	osinput.ContractStateCommitmentInfo = contractStateCommitmentInfo
 	osinput.ContractClassCommitmentInfo = classStateCommitmentInfo
 
-	// populate transactions, deprecrated classes, and classes
 	for _, tx := range block.Transactions {
 		osinput.Transactions = append(osinput.Transactions, tx)
 
