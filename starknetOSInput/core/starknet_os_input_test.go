@@ -44,12 +44,24 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		}
 		su := &core.StateUpdate{
 			OldRoot:   &felt.Zero,
-			NewRoot:   utils.HexToFelt(t, "0x0"),
+			NewRoot:   utils.HexToFelt(t, "0x56d5923af39ff8bea3367424dfcb22757947936c9133ac3b25313d014244028"),
 			BlockHash: &felt.Zero,
 			StateDiff: &core.StateDiff{
+				StorageDiffs: map[felt.Felt]map[felt.Felt]*felt.Felt{
+					*zeroHash: {
+						*zeroHash: oneHash,
+					},
+					*oneHash: {
+						*oneHash: oneHash,
+					},
+				},
 				Nonces: map[felt.Felt]*felt.Felt{
 					*zeroHash: &felt.Zero,
 					*oneHash:  &felt.Zero,
+				},
+				DeployedContracts: map[felt.Felt]*felt.Felt{
+					*zeroHash: new(felt.Felt).SetUint64(123),
+					*oneHash:  new(felt.Felt).SetUint64(456),
 				},
 				DeclaredV0Classes: []*felt.Felt{zeroHash, oneHash},
 				DeclaredV1Classes: nil,
