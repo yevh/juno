@@ -70,7 +70,11 @@ func calculateOSInput(block core.Block, oldstate core.StateHistoryReader, newsta
 		}
 	}
 
-	osinput.ClassHashToCompiledClassHash, err = getInitialClassHashToCompiledClassHash(oldstate, classHashToCompiledClassHash)
+	initClassHashToCompiledClassHash, err := getInitialClassHashToCompiledClassHash(oldstate, classHashKeys)
+	if err != nil {
+		return nil, err
+	}
+	osinput.ClassHashToCompiledClassHash = initClassHashToCompiledClassHash
 
 	// Todo: CompiledClassVisitedPcs??
 
@@ -133,11 +137,19 @@ func getClassHashToCompiledClassHash(reader core.StateHistoryReader, classHashes
 
 }
 
-func getInitialClassHashToCompiledClassHash(oldstate core.StateHistoryReader, classHashToCompiledClassHash map[felt.Felt]felt.Felt) (map[felt.Felt]felt.Felt, error) {
-	for range classHashToCompiledClassHash {
-		panic("unimplemented getInitialClassHashToCompiledClassHash")
+func getInitialClassHashToCompiledClassHash(oldstate core.StateHistoryReader, classHashKeys []felt.Felt) (map[felt.Felt]felt.Felt, error) {
+	classHashToCompiledClassHash := make(map[felt.Felt]felt.Felt)
+	for _, key := range classHashKeys {
+		class, err := oldstate.Class(&key)
+		if err != nil {
+			return nil, err
+		}
+		switch c := (class.Class).(type) {
+		case *core.Cairo1Class:
+			classHashToCompiledClassHash[key] = *c.Compiled.Hash()
+		}
 	}
-	return nil, nil
+	return classHashToCompiledClassHash, nil
 }
 
 // getTrieCommitmentInfo returns the CommitmentInfo (effectievely the set of modified nodes) that results from a Trie update.
