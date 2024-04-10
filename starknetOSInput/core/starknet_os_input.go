@@ -33,15 +33,22 @@ func calculateOSInput(block core.Block, oldstate core.StateHistoryReader, newsta
 	if err != nil {
 		return nil, err
 	}
+	classHashKeys := []felt.Felt{}
+	for _, key := range classHashToCompiledClassHash {
+		classHashKeys = append(classHashKeys, key)
+	}
 
-	// Todo: commitment info
-	contractStateCommitmentInfo, err := getContractStateCommitmentInfo(oldstate, newstate, stateSelector.ContractAddresses)
+	contractStateCommitmentInfo, err := getTrieCommitmentInfo(oldstate, newstate, stateSelector.ContractAddresses)
 	if err != nil {
 		return nil, err
 	}
-	classStateCommitmentInfo := getClassStateCommitmentInfo(oldstate, newstate, classHashToCompiledClassHash)
+
+	classStateCommitmentInfo, err := getTrieCommitmentInfo(oldstate, newstate, classHashKeys)
+	if err != nil {
+		return nil, err
+	}
 	osinput.ContractStateCommitmentInfo = *contractStateCommitmentInfo
-	osinput.ContractClassCommitmentInfo = classStateCommitmentInfo
+	osinput.ContractClassCommitmentInfo = *classStateCommitmentInfo
 
 	for _, tx := range block.Transactions {
 		osinput.Transactions = append(osinput.Transactions, tx)
@@ -133,11 +140,11 @@ func getInitialClassHashToCompiledClassHash(oldstate core.StateHistoryReader, cl
 	return nil, nil
 }
 
-func getContractStateCommitmentInfo(oldstate core.StateHistoryReader, newstate core.StateHistoryReader, contractAddresses []felt.Felt) (*CommitmentInfo, error) {
-	// Todo: Given the old and new contract Trie, collect all the nodes that were modified
+// getTrieCommitmentInfo returns the CommitmentInfo (effectievely the set of modified nodes) that results from a Trie update.
+func getTrieCommitmentInfo(oldstate core.StateHistoryReader, newstate core.StateHistoryReader, keys []felt.Felt) (*CommitmentInfo, error) {
 	commitmentFacts := make(map[felt.Felt][]felt.Felt)
-	for _, address := range contractAddresses {
-		if address.Equal(&felt.Zero) || address.Equal(new(felt.Felt).SetUint64(1)) { // Todo: Hack to make empty state work for initial tests.
+	for _, key := range keys {
+		if key.Equal(&felt.Zero) || key.Equal(new(felt.Felt).SetUint64(1)) { // Todo: Hack to make empty state work for initial tests.
 			continue
 		}
 		getStorageNodes := func(state core.StateHistoryReader, address felt.Felt) ([]trie.StorageNode, error) {
@@ -153,11 +160,11 @@ func getContractStateCommitmentInfo(oldstate core.StateHistoryReader, newstate c
 			}
 			return addressNodes, nil
 		}
-		oldStorageNodes, err := getStorageNodes(oldstate, address)
+		oldStorageNodes, err := getStorageNodes(oldstate, key)
 		if err != nil {
 			return nil, err
 		}
-		newStorageNodes, err := getStorageNodes(newstate, address)
+		newStorageNodes, err := getStorageNodes(newstate, key)
 		if err != nil {
 			return nil, err
 		}
@@ -189,15 +196,6 @@ func getContractStateCommitmentInfo(oldstate core.StateHistoryReader, newstate c
 		TreeHeight:      251,             // Todo
 		CommitmentFacts: commitmentFacts,
 	}, nil
-}
-
-func getClassStateCommitmentInfo(oldstate core.StateHistoryReader, newstate core.StateHistoryReader, classHashToCompiledClassHash map[felt.Felt]felt.Felt) CommitmentInfo {
-	// Todo: Given the old and new class Trie, collect all the
-	// nodes that were modified
-	for range classHashToCompiledClassHash {
-		panic("unimplemented getClassStateCommitmentInfo")
-	}
-	return CommitmentInfo{}
 }
 
 func getContracts(reader core.StateHistoryReader, contractAddresses []felt.Felt) (map[felt.Felt]ContractState, error) {
