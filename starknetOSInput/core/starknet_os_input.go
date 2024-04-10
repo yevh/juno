@@ -34,7 +34,7 @@ func calculateOSInput(block core.Block, oldstate core.StateHistoryReader, newsta
 	}
 
 	// Todo: commitment info
-	contractStateCommitmentInfo := getContractStateCommitmentInfo(oldstate, newstate, stateSelector.ContractAddresses)
+	contractStateCommitmentInfo, err := getContractStateCommitmentInfo(oldstate, newstate, stateSelector.ContractAddresses)
 	classStateCommitmentInfo := getClassStateCommitmentInfo(oldstate, newstate, classHashToCompiledClassHash)
 	osinput.ContractStateCommitmentInfo = contractStateCommitmentInfo
 	osinput.ContractClassCommitmentInfo = classStateCommitmentInfo
@@ -129,16 +129,20 @@ func getInitialClassHashToCompiledClassHash(oldstate core.StateHistoryReader, cl
 	return nil, nil
 }
 
-func getContractStateCommitmentInfo(oldstate core.StateHistoryReader, newstate core.StateHistoryReader, contractAddresses []felt.Felt) CommitmentInfo {
+func getContractStateCommitmentInfo(oldstate core.StateHistoryReader, newstate core.StateHistoryReader, contractAddresses []felt.Felt) (CommitmentInfo, error) {
 	// Todo: Given the old and new contract Trie, collect all the
 	// nodes that were modified
 	for _, address := range contractAddresses {
 		if address.Equal(&felt.Zero) || address.Equal(new(felt.Felt).SetUint64(1)) { // Todo: Hack to make empty state work for initial tests.
 			continue
 		}
+		_, _, err := oldstate.StorageTrie()
+		if err != nil {
+			return CommitmentInfo{}, err
+		}
 		panic("unimplemented getContractStateCommitmentInfo")
 	}
-	return CommitmentInfo{}
+	return CommitmentInfo{}, nil
 }
 
 func getClassStateCommitmentInfo(oldstate core.StateHistoryReader, newstate core.StateHistoryReader, classHashToCompiledClassHash map[felt.Felt]felt.Felt) CommitmentInfo {

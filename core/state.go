@@ -36,6 +36,7 @@ type StateHistoryReader interface {
 }
 
 type StateReader interface {
+	StorageTrie() (*trie.Trie, func() error, error)
 	ContractClassHash(addr *felt.Felt) (*felt.Felt, error)
 	ContractNonce(addr *felt.Felt) (*felt.Felt, error)
 	ContractStorage(addr, key *felt.Felt) (*felt.Felt, error)
@@ -130,6 +131,11 @@ func (s *State) Root() (*felt.Felt, error) {
 
 // storage returns a [core.Trie] that represents the Starknet global state in the given Txn context.
 func (s *State) storage() (*trie.Trie, func() error, error) {
+	return s.globalTrie(db.StateTrie, trie.NewTriePedersen)
+}
+
+// storage returns a [core.Trie] that represents the Starknet global state in the given Txn context.
+func (s *State) StorageTrie() (*trie.Trie, func() error, error) {
 	return s.globalTrie(db.StateTrie, trie.NewTriePedersen)
 }
 

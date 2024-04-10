@@ -9,6 +9,7 @@ import (
 
 	core "github.com/NethermindEth/juno/core"
 	felt "github.com/NethermindEth/juno/core/felt"
+	trie "github.com/NethermindEth/juno/core/trie"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -168,4 +169,20 @@ func (m *MockStateHistoryReader) ContractStorageRoot(arg0 *felt.Felt) (*felt.Fel
 func (mr *MockStateHistoryReaderMockRecorder) ContractStorageRoot(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ContractStorageRoot", reflect.TypeOf((*MockStateHistoryReader)(nil).ContractStorageRoot), arg0)
+}
+
+// StorageTrie mocks base method.
+func (m *MockStateHistoryReader) StorageTrie() (*trie.Trie, func() error, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StorageTrie")
+	ret0, _ := ret[0].(*trie.Trie)
+	ret1, _ := ret[1].(func() error)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// StorageTrie indicates an expected call of StorageTrie.
+func (mr *MockStateHistoryReaderMockRecorder) StorageTrie() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StorageTrie", reflect.TypeOf((*MockStateHistoryReader)(nil).StorageTrie))
 }
