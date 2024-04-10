@@ -5,6 +5,7 @@ import (
 
 	"github.com/NethermindEth/juno/core"
 	"github.com/NethermindEth/juno/core/felt"
+	"github.com/NethermindEth/juno/core/trie"
 	"github.com/NethermindEth/juno/vm"
 )
 
@@ -35,8 +36,11 @@ func calculateOSInput(block core.Block, oldstate core.StateHistoryReader, newsta
 
 	// Todo: commitment info
 	contractStateCommitmentInfo, err := getContractStateCommitmentInfo(oldstate, newstate, stateSelector.ContractAddresses)
+	if err != nil {
+		return nil, err
+	}
 	classStateCommitmentInfo := getClassStateCommitmentInfo(oldstate, newstate, classHashToCompiledClassHash)
-	osinput.ContractStateCommitmentInfo = contractStateCommitmentInfo
+	osinput.ContractStateCommitmentInfo = *contractStateCommitmentInfo
 	osinput.ContractClassCommitmentInfo = classStateCommitmentInfo
 
 	for _, tx := range block.Transactions {
@@ -129,20 +133,62 @@ func getInitialClassHashToCompiledClassHash(oldstate core.StateHistoryReader, cl
 	return nil, nil
 }
 
-func getContractStateCommitmentInfo(oldstate core.StateHistoryReader, newstate core.StateHistoryReader, contractAddresses []felt.Felt) (CommitmentInfo, error) {
-	// Todo: Given the old and new contract Trie, collect all the
-	// nodes that were modified
+func getContractStateCommitmentInfo(oldstate core.StateHistoryReader, newstate core.StateHistoryReader, contractAddresses []felt.Felt) (*CommitmentInfo, error) {
+	// Todo: Given the old and new contract Trie, collect all the nodes that were modified
+	commitmentFacts := make(map[felt.Felt][]felt.Felt)
 	for _, address := range contractAddresses {
 		if address.Equal(&felt.Zero) || address.Equal(new(felt.Felt).SetUint64(1)) { // Todo: Hack to make empty state work for initial tests.
 			continue
 		}
-		_, _, err := oldstate.StorageTrie()
-		if err != nil {
-			return CommitmentInfo{}, err
+		getStorageNodes := func(state core.StateHistoryReader, address felt.Felt) ([]trie.StorageNode, error) {
+			sTrie, _, err := state.StorageTrie()
+			if err != nil {
+				return nil, err
+			}
+			addrBytes := address.Bytes()
+			key := trie.NewKey(251, addrBytes[:])
+			addressNodes, err := sTrie.NodesFromRoot(&key)
+			if err != nil {
+				return nil, err
+			}
+			return addressNodes, nil
 		}
-		panic("unimplemented getContractStateCommitmentInfo")
+		oldStorageNodes, err := getStorageNodes(oldstate, address)
+		if err != nil {
+			return nil, err
+		}
+		newStorageNodes, err := getStorageNodes(newstate, address)
+		if err != nil {
+			return nil, err
+		}
+
+		// Todo: check this. Assumes the nodes are ordered.
+		iterFirstNew := 0
+		for range oldStorageNodes {
+			oldKeyFelt := oldStorageNodes[iterFirstNew].Key().Felt()
+			newKeyFelt := newStorageNodes[iterFirstNew].Key().Felt()
+			if oldKeyFelt.Equal(&newKeyFelt) {
+				iterFirstNew++
+				continue
+			} else {
+				break
+			}
+		}
+		modifiedNodes := newStorageNodes[iterFirstNew:]
+		for _, node := range modifiedNodes {
+			key := node.Key()
+			value := node.Node().Value
+			keyLen := key.Len()
+			path := new(felt.Felt) // Todo: export trie path function
+			commitmentFacts[key.Felt()] = []felt.Felt{*new(felt.Felt).SetUint64(uint64(keyLen)), *value, *path}
+		}
 	}
-	return CommitmentInfo{}, nil
+	return &CommitmentInfo{
+		PreviousRoot:    *new(felt.Felt), // Todo
+		UpdatedRoot:     *new(felt.Felt), // Todo
+		TreeHeight:      251,             // Todo
+		CommitmentFacts: commitmentFacts,
+	}, nil
 }
 
 func getClassStateCommitmentInfo(oldstate core.StateHistoryReader, newstate core.StateHistoryReader, classHashToCompiledClassHash map[felt.Felt]felt.Felt) CommitmentInfo {
