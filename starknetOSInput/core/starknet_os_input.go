@@ -42,12 +42,12 @@ func calculateOSInput(block core.Block, oldstate core.StateHistoryReader, newsta
 	if err != nil {
 		return nil, err
 	}
+	osinput.ContractStateCommitmentInfo = *contractStateCommitmentInfo
 
 	classStateCommitmentInfo, err := getTrieCommitmentInfo(oldstate, newstate, classHashKeys)
 	if err != nil {
 		return nil, err
 	}
-	osinput.ContractStateCommitmentInfo = *contractStateCommitmentInfo
 	osinput.ContractClassCommitmentInfo = *classStateCommitmentInfo
 
 	for _, tx := range block.Transactions {
@@ -155,22 +155,24 @@ func getInitialClassHashToCompiledClassHash(oldstate core.StateHistoryReader, cl
 // getTrieCommitmentInfo returns the CommitmentInfo (effectievely the set of modified nodes) that results from a Trie update.
 func getTrieCommitmentInfo(oldstate core.StateHistoryReader, newstate core.StateHistoryReader, keys []felt.Felt) (*CommitmentInfo, error) {
 	commitmentFacts := make(map[felt.Felt][]felt.Felt)
+
+	getStorageNodes := func(state core.StateHistoryReader, address felt.Felt) ([]trie.StorageNode, error) {
+		sTrie, _, err := state.StorageTrie()
+		if err != nil {
+			return nil, err
+		}
+		addrBytes := address.Bytes()
+		key := trie.NewKey(251, addrBytes[:])
+		addressNodes, err := sTrie.NodesFromRoot(&key)
+		if err != nil {
+			return nil, err
+		}
+		return addressNodes, nil
+	}
+
 	for _, key := range keys {
 		if key.Equal(&felt.Zero) || key.Equal(new(felt.Felt).SetUint64(1)) { // Todo: Hack to make empty state work for initial tests.
 			continue
-		}
-		getStorageNodes := func(state core.StateHistoryReader, address felt.Felt) ([]trie.StorageNode, error) {
-			sTrie, _, err := state.StorageTrie()
-			if err != nil {
-				return nil, err
-			}
-			addrBytes := address.Bytes()
-			key := trie.NewKey(251, addrBytes[:])
-			addressNodes, err := sTrie.NodesFromRoot(&key)
-			if err != nil {
-				return nil, err
-			}
-			return addressNodes, nil
 		}
 		oldStorageNodes, err := getStorageNodes(oldstate, key)
 		if err != nil {
@@ -202,10 +204,29 @@ func getTrieCommitmentInfo(oldstate core.StateHistoryReader, newstate core.State
 			commitmentFacts[key.Felt()] = []felt.Felt{*new(felt.Felt).SetUint64(uint64(keyLen)), *value, *path}
 		}
 	}
+
+	oldStateTrie, _, err := oldstate.StorageTrie()
+	if err != nil {
+		return nil, err
+	}
+	prevRoot, err := oldStateTrie.Root()
+	if err != nil {
+		return nil, err
+	}
+
+	newStateTrie, _, err := newstate.StorageTrie()
+	if err != nil {
+		return nil, err
+	}
+	newRoot, err := newStateTrie.Root()
+	if err != nil {
+		return nil, err
+	}
+
 	return &CommitmentInfo{
-		PreviousRoot:    *new(felt.Felt), // Todo
-		UpdatedRoot:     *new(felt.Felt), // Todo
-		TreeHeight:      251,             // Todo
+		PreviousRoot:    *prevRoot,
+		UpdatedRoot:     *newRoot,
+		TreeHeight:      251, // Todo : leave hardcoded
 		CommitmentFacts: commitmentFacts,
 	}, nil
 }

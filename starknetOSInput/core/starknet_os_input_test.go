@@ -31,18 +31,18 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 	exampleConfig := LoadExampleStarknetOSConfig()
 	expectedOSInptsEmpty := StarknetOsInput{
 		/// Todo: implement commitment facts logic and readd to tests
-		// ContractStateCommitmentInfo: CommitmentInfo{
-		// 	PreviousRoot:    *new(felt.Felt).SetUint64(0),
-		// 	UpdatedRoot:     *new(felt.Felt).SetUint64(0),
-		// 	TreeHeight:      251,
-		// 	CommitmentFacts: nil,
-		// },
-		// ContractClassCommitmentInfo: CommitmentInfo{
-		// 	PreviousRoot:    *new(felt.Felt).SetUint64(0),
-		// 	UpdatedRoot:     *new(felt.Felt).SetUint64(0),
-		// 	TreeHeight:      251,
-		// 	CommitmentFacts: nil,
-		// },
+		ContractStateCommitmentInfo: CommitmentInfo{
+			PreviousRoot:    *new(felt.Felt).SetUint64(0),
+			UpdatedRoot:     *new(felt.Felt).SetUint64(0),
+			TreeHeight:      251,
+			CommitmentFacts: nil,
+		},
+		ContractClassCommitmentInfo: CommitmentInfo{
+			PreviousRoot:    *new(felt.Felt).SetUint64(0),
+			UpdatedRoot:     *new(felt.Felt).SetUint64(0),
+			TreeHeight:      251,
+			CommitmentFacts: nil,
+		},
 		DeprecatedCompiledClasses: nil,
 		CompiledClasses:           nil,
 		CompiledClassVisitedPcs:   nil,
