@@ -19,13 +19,22 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 	network := utils.Sepolia
 
 	testDB := pebble.NewMemTest(t)
-	txn, err := testDB.NewTransaction(true)
+	txn, err := testDB.NewTransaction(false)
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, txn.Discard())
 	})
 
-	state := core.NewState(txn)
+	oldState := core.NewState(txn)
+
+	txnNew, err := testDB.NewTransaction(true)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, txnNew.Discard())
+	})
+
+	newState := core.NewState(txnNew)
+
 	mockVM := mocks.NewMockVM(mockCtrl)
 
 	// Test data from run_os.py, with "empty" state (0 and 1 contracts), no transactions and no classes.
@@ -70,7 +79,7 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		BlockHash:                    *new(felt.Felt).SetBytes([]byte{0x05, 0x9b, 0x01, 0xba, 0x26, 0x2c, 0x99, 0x9f, 0x26, 0x17, 0x41, 0x2f, 0xfb, 0xba, 0x78, 0x0f, 0x80, 0xb0, 0x10, 0x3d, 0x92, 0x8c, 0xbc, 0xe1, 0xae, 0xcb, 0xaa, 0x50, 0xde, 0x90, 0xab, 0xda}),
 	}
 
-	t.Run("todo empty inputs", func(t *testing.T) {
+	t.Run("empty inputs", func(t *testing.T) {
 		zeroHash := utils.HexToFelt(t, "0x0")
 		oneHash := utils.HexToFelt(t, "0x1")
 		newClasses := map[felt.Felt]core.Class{
@@ -95,14 +104,14 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 				DeclaredV1Classes: nil,
 			},
 		}
-		err := state.Update(0, su, newClasses)
+		err := newState.Update(0, su, newClasses)
 		require.NoError(t, err)
 
 		vmParas := VMParameters{
 			Txns:            nil,
 			DeclaredClasses: nil,
 			PaidFeesOnL1:    nil,
-			State:           state,
+			State:           oldState,
 			Network:         &network,
 			SkipChargeFee:   false,
 			SkipValidate:    false,
@@ -115,10 +124,9 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 			},
 		}
 		mockVM.EXPECT().Execute(vmParas.Txns, vmParas.DeclaredClasses, vmParas.PaidFeesOnL1,
-			vmParas.BlockInfo, state, vmParas.Network, vmParas.SkipChargeFee, vmParas.SkipValidate, vmParas.ErrOnRevert, vmParas.UseBlobData).Return(nil, nil, nil, nil)
+			vmParas.BlockInfo, oldState, vmParas.Network, vmParas.SkipChargeFee, vmParas.SkipValidate, vmParas.ErrOnRevert, vmParas.UseBlobData).Return(nil, nil, nil, nil)
 
-		// Todo: pass in old state and new state...
-		osinput, err := GenerateStarknetOSInput(&block, state, state, mockVM, vmParas)
+		osinput, err := GenerateStarknetOSInput(&block, oldState, newState, mockVM, vmParas)
 		require.NoError(t, err)
 
 		require.Equal(t, expectedOSInptsEmpty.ContractStateCommitmentInfo, osinput.ContractStateCommitmentInfo)

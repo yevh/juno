@@ -234,6 +234,9 @@ func getTrieCommitmentInfo(oldstate core.StateHistoryReader, newstate core.State
 func getContracts(reader core.StateHistoryReader, contractAddresses []felt.Felt) (map[felt.Felt]ContractState, error) {
 	contractState := map[felt.Felt]ContractState{}
 	for _, addr := range contractAddresses {
+		if addr.Equal(new(felt.Felt).SetUint64(0)) || addr.Equal(new(felt.Felt).SetUint64(1)) {
+			continue
+		}
 		root, err := reader.ContractStorageRoot(&addr)
 		if err != nil {
 			return nil, err
