@@ -154,7 +154,7 @@ func getInitialClassHashToCompiledClassHash(oldstate core.StateHistoryReader, cl
 
 // getTrieCommitmentInfo returns the CommitmentInfo (effectievely the set of modified nodes) that results from a Trie update.
 func getTrieCommitmentInfo(oldstate core.StateHistoryReader, newstate core.StateHistoryReader, keys []felt.Felt) (*CommitmentInfo, error) {
-	commitmentFacts := make(map[felt.Felt][]felt.Felt)
+	commitmentFacts := map[felt.Felt][]felt.Felt{}
 
 	getStorageNodes := func(state core.StateHistoryReader, address felt.Felt) ([]trie.StorageNode, error) {
 		sTrie, _, err := state.StorageTrie()

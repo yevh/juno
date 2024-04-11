@@ -28,20 +28,20 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 	state := core.NewState(txn)
 	mockVM := mocks.NewMockVM(mockCtrl)
 
+	// Test data from run_os.py, with "empty" state (0 and 1 contracts), no transactions and no classes.
 	exampleConfig := LoadExampleStarknetOSConfig()
 	expectedOSInptsEmpty := StarknetOsInput{
-		/// Todo: implement commitment facts logic and readd to tests
 		ContractStateCommitmentInfo: CommitmentInfo{
-			PreviousRoot:    *new(felt.Felt).SetUint64(0),
-			UpdatedRoot:     *new(felt.Felt).SetUint64(0),
+			PreviousRoot:    *new(felt.Felt).SetUint64(0), // Todo: This should be zero because we start with an empty trie?
+			UpdatedRoot:     *new(felt.Felt).SetUint64(0), // Todo: this should be non-zeor because we have contract states at 0 and 1??
 			TreeHeight:      251,
-			CommitmentFacts: nil,
+			CommitmentFacts: map[felt.Felt][]felt.Felt{},
 		},
 		ContractClassCommitmentInfo: CommitmentInfo{
-			PreviousRoot:    *new(felt.Felt).SetUint64(0),
-			UpdatedRoot:     *new(felt.Felt).SetUint64(0),
+			PreviousRoot:    *new(felt.Felt).SetUint64(0), // Todo: This should be zero because we start with an empty trie?
+			UpdatedRoot:     *new(felt.Felt).SetUint64(0), // Todo: This should be zero because "0" and "1" contracts have no corresponding classes?
 			TreeHeight:      251,
-			CommitmentFacts: nil,
+			CommitmentFacts: map[felt.Felt][]felt.Felt{},
 		},
 		DeprecatedCompiledClasses: nil,
 		CompiledClasses:           nil,
@@ -70,7 +70,6 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		BlockHash:                    *new(felt.Felt).SetBytes([]byte{0x05, 0x9b, 0x01, 0xba, 0x26, 0x2c, 0x99, 0x9f, 0x26, 0x17, 0x41, 0x2f, 0xfb, 0xba, 0x78, 0x0f, 0x80, 0xb0, 0x10, 0x3d, 0x92, 0x8c, 0xbc, 0xe1, 0xae, 0xcb, 0xaa, 0x50, 0xde, 0x90, 0xab, 0xda}),
 	}
 
-	// Test data from run_os.py, with "empty" state (0 and 1 contracts), no transactions and no classes.
 	t.Run("todo empty inputs", func(t *testing.T) {
 		zeroHash := utils.HexToFelt(t, "0x0")
 		oneHash := utils.HexToFelt(t, "0x1")
@@ -117,6 +116,8 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		}
 		mockVM.EXPECT().Execute(vmParas.Txns, vmParas.DeclaredClasses, vmParas.PaidFeesOnL1,
 			vmParas.BlockInfo, state, vmParas.Network, vmParas.SkipChargeFee, vmParas.SkipValidate, vmParas.ErrOnRevert, vmParas.UseBlobData).Return(nil, nil, nil, nil)
+
+		// Todo: pass in old state and new state...
 		osinput, err := GenerateStarknetOSInput(&block, state, state, mockVM, vmParas)
 		require.NoError(t, err)
 
