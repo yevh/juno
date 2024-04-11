@@ -56,14 +56,6 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		CompiledClasses:           nil,
 		CompiledClassVisitedPcs:   nil,
 		Contracts: map[felt.Felt]ContractState{
-			*new(felt.Felt).SetUint64(0): {
-				ContractHash: *new(felt.Felt).SetUint64(0),
-				StorageCommitmentTree: PatriciaTree{
-					Root:   *new(felt.Felt).SetUint64(0),
-					Height: 251,
-				},
-				Nonce: *new(felt.Felt).SetUint64(0),
-			},
 			*new(felt.Felt).SetUint64(1): {
 				ContractHash: *new(felt.Felt).SetUint64(0),
 				StorageCommitmentTree: PatriciaTree{

@@ -6,6 +6,7 @@ import (
 	"github.com/NethermindEth/juno/core"
 	"github.com/NethermindEth/juno/core/felt"
 	"github.com/NethermindEth/juno/core/trie"
+	"github.com/NethermindEth/juno/db"
 	"github.com/NethermindEth/juno/vm"
 )
 
@@ -234,19 +235,25 @@ func getTrieCommitmentInfo(oldstate core.StateHistoryReader, newstate core.State
 func getContracts(reader core.StateHistoryReader, contractAddresses []felt.Felt) (map[felt.Felt]ContractState, error) {
 	contractState := map[felt.Felt]ContractState{}
 	for _, addr := range contractAddresses {
-		if addr.Equal(new(felt.Felt).SetUint64(0)) || addr.Equal(new(felt.Felt).SetUint64(1)) {
-			continue
-		}
 		root, err := reader.ContractStorageRoot(&addr)
 		if err != nil {
+			if err == db.ErrKeyNotFound {
+				continue
+			}
 			return nil, err
 		}
 		nonce, err := reader.ContractNonce(&addr)
 		if err != nil {
+			if err == db.ErrKeyNotFound {
+				continue
+			}
 			return nil, err
 		}
 		hash, err := reader.ContractClassHash(&addr)
 		if err != nil {
+			if err == db.ErrKeyNotFound {
+				continue
+			}
 			return nil, err
 		}
 		contractState[addr] = ContractState{
