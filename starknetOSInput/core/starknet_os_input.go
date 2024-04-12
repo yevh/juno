@@ -235,6 +235,17 @@ func getTrieCommitmentInfo(oldstate core.StateHistoryReader, newstate core.State
 func getContracts(reader core.StateHistoryReader, contractAddresses []felt.Felt) (map[felt.Felt]ContractState, error) {
 	contractState := map[felt.Felt]ContractState{}
 	for _, addr := range contractAddresses {
+		// Todo: should we return "zeros" for any contract that has not been deployed?
+		// Note: run_os.py populates this with zeros, even for the "0x0" which has no contract storage
+		if addr.Equal(&felt.Zero) || addr.Equal(new(felt.Felt).SetUint64(1)) {
+			contractState[addr] = ContractState{
+				ContractHash: felt.Zero,
+				StorageCommitmentTree: PatriciaTree{
+					Root:   felt.Zero,
+					Height: 251,
+				},
+				Nonce: felt.Zero}
+		}
 		root, err := reader.ContractStorageRoot(&addr)
 		if err != nil {
 			if err == db.ErrKeyNotFound {

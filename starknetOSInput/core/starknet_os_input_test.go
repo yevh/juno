@@ -37,18 +37,22 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 
 	mockVM := mocks.NewMockVM(mockCtrl)
 
-	// Test data from run_os.py, with "empty" state (0 and 1 contracts), no transactions and no classes.
+	// Test data from run_os.py,  with state (only 0 and 1 contracts), no transactions and no classes.
 	exampleConfig := LoadExampleStarknetOSConfig()
 	expectedOSInptsEmpty := StarknetOsInput{
+		// "0x0" has no state (no nonce, no classhash)
+		// "0x1" has storage, and class hash "0x0", and nonce "0x0". The "old_root" for block 0 is "0x0" suggesting it has no state?
 		ContractStateCommitmentInfo: CommitmentInfo{
-			PreviousRoot:    *new(felt.Felt).SetUint64(0), // Todo: This should be zero because we start with an empty trie?
-			UpdatedRoot:     *new(felt.Felt).SetUint64(0), // Todo: this should be non-zeor because we have contract states at 0 and 1??
+			PreviousRoot:    *new(felt.Felt).SetUint64(0),
+			UpdatedRoot:     *new(felt.Felt).SetUint64(0),
 			TreeHeight:      251,
 			CommitmentFacts: map[felt.Felt][]felt.Felt{},
 		},
+		// "0x0" has no storage / classhash, and therefore no corresponding class
+		// "0x1" has storage, and class hash "0x0", but no class exists with class hash "0x0"
 		ContractClassCommitmentInfo: CommitmentInfo{
-			PreviousRoot:    *new(felt.Felt).SetUint64(0), // Todo: This should be zero because we start with an empty trie?
-			UpdatedRoot:     *new(felt.Felt).SetUint64(0), // Todo: This should be zero because "0" and "1" contracts have no corresponding classes?
+			PreviousRoot:    *new(felt.Felt).SetUint64(0),
+			UpdatedRoot:     *new(felt.Felt).SetUint64(0),
 			TreeHeight:      251,
 			CommitmentFacts: map[felt.Felt][]felt.Felt{},
 		},
@@ -56,6 +60,14 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		CompiledClasses:           nil,
 		CompiledClassVisitedPcs:   nil,
 		Contracts: map[felt.Felt]ContractState{
+			*new(felt.Felt).SetUint64(0): {
+				ContractHash: *new(felt.Felt).SetUint64(0),
+				StorageCommitmentTree: PatriciaTree{
+					Root:   *new(felt.Felt).SetUint64(0),
+					Height: 251,
+				},
+				Nonce: *new(felt.Felt).SetUint64(0),
+			},
 			*new(felt.Felt).SetUint64(1): {
 				ContractHash: *new(felt.Felt).SetUint64(0),
 				StorageCommitmentTree: PatriciaTree{
@@ -65,38 +77,33 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 				Nonce: *new(felt.Felt).SetUint64(0),
 			},
 		},
-		ClassHashToCompiledClassHash: nil,
+		ClassHashToCompiledClassHash: map[felt.Felt]felt.Felt{},
 		GeneralConfig:                exampleConfig,
 		Transactions:                 nil,
 		BlockHash:                    *new(felt.Felt).SetBytes([]byte{0x05, 0x9b, 0x01, 0xba, 0x26, 0x2c, 0x99, 0x9f, 0x26, 0x17, 0x41, 0x2f, 0xfb, 0xba, 0x78, 0x0f, 0x80, 0xb0, 0x10, 0x3d, 0x92, 0x8c, 0xbc, 0xe1, 0xae, 0xcb, 0xaa, 0x50, 0xde, 0x90, 0xab, 0xda}),
 	}
 
 	t.Run("empty inputs", func(t *testing.T) {
-		zeroHash := utils.HexToFelt(t, "0x0")
-		oneHash := utils.HexToFelt(t, "0x1")
-		newClasses := map[felt.Felt]core.Class{
-			*zeroHash: &core.Cairo0Class{},
-			*oneHash:  &core.Cairo0Class{},
-		}
+		// zeroHash := new(felt.Felt).SetUint64(0)
+		// oneHash := new(felt.Felt).SetUint64(1)
 		su := &core.StateUpdate{
 			OldRoot:   &felt.Zero,
-			NewRoot:   utils.HexToFelt(t, "0x69f4c17b8a55ab8ba86c6dc976f85646bbc0ff78e5a3e2f9d221064800dae64"),
+			NewRoot:   &felt.Zero,
 			BlockHash: &felt.Zero,
 			StateDiff: &core.StateDiff{
 				StorageDiffs: nil,
-				Nonces: map[felt.Felt]*felt.Felt{
-					*zeroHash: &felt.Zero,
-					*oneHash:  &felt.Zero,
-				},
-				DeployedContracts: map[felt.Felt]*felt.Felt{
-					*zeroHash: new(felt.Felt).SetUint64(0),
-					*oneHash:  new(felt.Felt).SetUint64(0),
-				},
-				DeclaredV0Classes: []*felt.Felt{zeroHash, oneHash},
+				Nonces:       nil,
+				// Todo: "0x1" has a nonce, and classHash
+				// map[felt.Felt]*felt.Felt{
+				// 	// *oneHash: zeroHash,
+				// },
+				// "0x0" has no class, and "0x1" has a classHash of "0x0" but there is no such class
+				DeployedContracts: nil,
+				DeclaredV0Classes: nil,
 				DeclaredV1Classes: nil,
 			},
 		}
-		err := newState.Update(0, su, newClasses)
+		err := newState.Update(0, su, nil)
 		require.NoError(t, err)
 
 		vmParas := VMParameters{
