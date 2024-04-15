@@ -3,6 +3,7 @@ package osinput
 import (
 	"errors"
 
+	"github.com/NethermindEth/juno/blockchain"
 	"github.com/NethermindEth/juno/core"
 	"github.com/NethermindEth/juno/core/felt"
 	"github.com/NethermindEth/juno/core/trie"
@@ -11,17 +12,64 @@ import (
 )
 
 // GenerateStarknetOSInput generates the starknet OS input, given a block, state and classes.
-func GenerateStarknetOSInput(block *core.Block, oldstate core.StateHistoryReader, newstate core.StateHistoryReader, vm vm.VM, vmInput VMParameters) (*StarknetOsInput, error) {
+func GenerateStarknetOSInput(bc *blockchain.Blockchain, blockNumber uint64, vm vm.VM, vmInput VMParameters) (*StarknetOsInput, error) {
+
+	oldBlock, err := bc.BlockByNumber(blockNumber)
+	if err != nil {
+		return nil, err
+	}
+	su, err := bc.StateUpdateByNumber(blockNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	var classesToGet []*felt.Felt
+	for classHash := range su.StateDiff.DeclaredV1Classes {
+		classesToGet = append(classesToGet, &classHash)
+	}
+	classesToGet = append(classesToGet, su.StateDiff.DeclaredV0Classes...)
+	oldState, oldCloser, err := bc.StateAtBlockNumber(blockNumber)
+	if err != nil {
+		return nil, err
+	}
+	newState, newCloser, err := bc.StateAtBlockNumber(blockNumber + 1)
+	if err != nil {
+		return nil, err
+	}
+	var declaredClasses []core.Class
+	for _, classHash := range classesToGet {
+		decClass, err := oldState.Class(classHash)
+		if err != nil {
+			return nil, err
+		}
+		declaredClasses = append(declaredClasses, decClass.Class)
+	}
+	vmInput.Txns = oldBlock.Transactions
+	vmInput.DeclaredClasses = declaredClasses
+	vmInput.BlockInfo.Header = oldBlock.Header
+	vmInput.Network = bc.Network()
+
 	txnExecInfo, err := TxnExecInfo(vm, &vmInput)
 	if err != nil {
 		return nil, err
 	}
 
-	return calculateOSInput(*block, oldstate, newstate, *txnExecInfo)
+	osInput, err := calculateOSInput(*oldBlock, oldState, newState, *txnExecInfo)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = oldCloser(); err != nil {
+		return nil, err
+	}
+	if err = newCloser(); err != nil {
+		return nil, err
+	}
+	return osInput, nil
 }
 
 // Todo: update to use vm.TransactionTrace instead of TransactionExecutionInfo?
-func calculateOSInput(block core.Block, oldstate core.StateHistoryReader, newstate core.StateHistoryReader, execInfo []TransactionExecutionInfo) (*StarknetOsInput, error) {
+func calculateOSInput(block core.Block, oldstate core.StateReader, newstate core.StateReader, execInfo []TransactionExecutionInfo) (*StarknetOsInput, error) {
 	osinput := &StarknetOsInput{}
 
 	// Todo: complete
@@ -122,7 +170,7 @@ func LoadExampleStarknetOSConfig() StarknetGeneralConfig {
 	}
 }
 
-func getClassHashToCompiledClassHash(reader core.StateHistoryReader, classHashes []felt.Felt) (map[felt.Felt]felt.Felt, error) {
+func getClassHashToCompiledClassHash(reader core.StateReader, classHashes []felt.Felt) (map[felt.Felt]felt.Felt, error) {
 	classHashToCompiledClassHash := map[felt.Felt]felt.Felt{}
 	for _, classHash := range classHashes {
 		decClass, err := reader.Class(&classHash)
@@ -138,7 +186,7 @@ func getClassHashToCompiledClassHash(reader core.StateHistoryReader, classHashes
 
 }
 
-func getInitialClassHashToCompiledClassHash(oldstate core.StateHistoryReader, classHashKeys []felt.Felt) (map[felt.Felt]felt.Felt, error) {
+func getInitialClassHashToCompiledClassHash(oldstate core.StateReader, classHashKeys []felt.Felt) (map[felt.Felt]felt.Felt, error) {
 	classHashToCompiledClassHash := make(map[felt.Felt]felt.Felt)
 	for _, key := range classHashKeys {
 		class, err := oldstate.Class(&key)
@@ -154,10 +202,10 @@ func getInitialClassHashToCompiledClassHash(oldstate core.StateHistoryReader, cl
 }
 
 // getTrieCommitmentInfo returns the CommitmentInfo (effectievely the set of modified nodes) that results from a Trie update.
-func getTrieCommitmentInfo(oldstate core.StateHistoryReader, newstate core.StateHistoryReader, keys []felt.Felt) (*CommitmentInfo, error) {
+func getTrieCommitmentInfo(oldstate core.StateReader, newstate core.StateReader, keys []felt.Felt) (*CommitmentInfo, error) {
 	commitmentFacts := map[felt.Felt][]felt.Felt{}
 
-	getStorageNodes := func(state core.StateHistoryReader, address felt.Felt) ([]trie.StorageNode, error) {
+	getStorageNodes := func(state core.StateReader, address felt.Felt) ([]trie.StorageNode, error) {
 		sTrie, _, err := state.StorageTrie()
 		if err != nil {
 			return nil, err
@@ -232,7 +280,7 @@ func getTrieCommitmentInfo(oldstate core.StateHistoryReader, newstate core.State
 	}, nil
 }
 
-func getContracts(reader core.StateHistoryReader, contractAddresses []felt.Felt) (map[felt.Felt]ContractState, error) {
+func getContracts(reader core.StateReader, contractAddresses []felt.Felt) (map[felt.Felt]ContractState, error) {
 	contractState := map[felt.Felt]ContractState{}
 	for _, addr := range contractAddresses {
 		root, err := reader.ContractStorageRoot(&addr)
