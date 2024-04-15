@@ -59,6 +59,7 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		DeprecatedCompiledClasses: nil,
 		CompiledClasses:           nil,
 		CompiledClassVisitedPcs:   nil,
+		// run_os.py returns zeros, even for non-deployed contracts
 		Contracts: map[felt.Felt]ContractState{
 			*new(felt.Felt).SetUint64(0): {
 				ContractHash: *new(felt.Felt).SetUint64(0),
@@ -83,21 +84,14 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		BlockHash:                    *new(felt.Felt).SetBytes([]byte{0x05, 0x9b, 0x01, 0xba, 0x26, 0x2c, 0x99, 0x9f, 0x26, 0x17, 0x41, 0x2f, 0xfb, 0xba, 0x78, 0x0f, 0x80, 0xb0, 0x10, 0x3d, 0x92, 0x8c, 0xbc, 0xe1, 0xae, 0xcb, 0xaa, 0x50, 0xde, 0x90, 0xab, 0xda}),
 	}
 
-	t.Run("empty inputs", func(t *testing.T) {
-		// zeroHash := new(felt.Felt).SetUint64(0)
-		// oneHash := new(felt.Felt).SetUint64(1)
+	t.Run("only 0x0 and 0x2 contracts", func(t *testing.T) {
 		su := &core.StateUpdate{
-			OldRoot:   &felt.Zero,
-			NewRoot:   &felt.Zero,
-			BlockHash: &felt.Zero,
+			OldRoot: &felt.Zero,
+			NewRoot: &felt.Zero,
+			// BlockHash: &felt.Zero, // Not used
 			StateDiff: &core.StateDiff{
-				StorageDiffs: nil,
-				Nonces:       nil,
-				// Todo: "0x1" has a nonce, and classHash
-				// map[felt.Felt]*felt.Felt{
-				// 	// *oneHash: zeroHash,
-				// },
-				// "0x0" has no class, and "0x1" has a classHash of "0x0" but there is no such class
+				StorageDiffs:      nil,
+				Nonces:            nil,
 				DeployedContracts: nil,
 				DeclaredV0Classes: nil,
 				DeclaredV1Classes: nil,
