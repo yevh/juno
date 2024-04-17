@@ -2,6 +2,8 @@ package osinput
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/NethermindEth/juno/blockchain"
@@ -75,6 +77,10 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 
 		osinput, err := GenerateStarknetOSInput(chain, 0, mockVM, vmParas)
 		require.NoError(t, err)
+		fmt.Println(osinput, err)
+		qwe, err := json.MarshalIndent(osinput, "", "")
+		require.NoError(t, err)
+		fmt.Println(string(qwe))
 
 		require.Equal(t, expectedOSInptsEmpty.ContractStateCommitmentInfo, osinput.ContractStateCommitmentInfo)
 		require.Equal(t, expectedOSInptsEmpty.ContractClassCommitmentInfo, osinput.ContractClassCommitmentInfo)

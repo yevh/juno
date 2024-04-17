@@ -1,6 +1,9 @@
 package osinput
 
 import (
+	"encoding/json"
+	"errors"
+
 	"github.com/NethermindEth/juno/core"
 	"github.com/NethermindEth/juno/core/felt"
 )
@@ -84,4 +87,78 @@ type GasPriceBounds struct {
 	MinWeiL1DataGasPrice felt.Felt `json:"min_wei_l1_data_gas_price"`
 	MinFriL1DataGasPrice felt.Felt `json:"min_fri_l1_data_gas_price"`
 	MaxFriL1DataGasPrice felt.Felt `json:"max_fri_l1_data_gas_price"`
+}
+
+func (s *StarknetOsInput) MarshalJSON() ([]byte, error) {
+	type Alias StarknetOsInput
+	aux := &struct {
+		DeprecatedCompiledClasses    map[string]core.Cairo0Class   `json:"deprecated_compiled_classes"`
+		CompiledClasses              map[string]core.CompiledClass `json:"compiled_classes"`
+		CompiledClassVisitedPcs      map[string][]felt.Felt        `json:"compiled_class_visited_pcs"`
+		Contracts                    map[string]ContractState      `json:"contracts"`
+		ClassHashToCompiledClassHash map[string]felt.Felt          `json:"class_hash_to_compiled_class_hash"`
+		*Alias
+	}{
+		Alias: (*Alias)(s),
+	}
+	var ok bool
+	aux.DeprecatedCompiledClasses, ok = convertMapKeysToString(s.DeprecatedCompiledClasses).(map[string]core.Cairo0Class)
+	if !ok {
+		return nil, errors.New("type assertion error in custom marshalling of StarknetOsInput")
+	}
+	aux.CompiledClasses, ok = convertMapKeysToString(s.CompiledClasses).(map[string]core.CompiledClass)
+	if !ok {
+		return nil, errors.New("type assertion error in custom marshalling of StarknetOsInput")
+	}
+	aux.CompiledClassVisitedPcs, ok = convertMapKeysToString(s.CompiledClassVisitedPcs).(map[string][]felt.Felt)
+	if !ok {
+		return nil, errors.New("type assertion error in custom marshalling of StarknetOsInput")
+	}
+
+	aux.Contracts = convertMapKeysToString(s.Contracts).(map[string]ContractState)
+	if !ok {
+		return nil, errors.New("type assertion error in custom marshalling of StarknetOsInput")
+	}
+	aux.ClassHashToCompiledClassHash = convertMapKeysToString(s.ClassHashToCompiledClassHash).(map[string]felt.Felt)
+	if !ok {
+		return nil, errors.New("type assertion error in custom marshalling of StarknetOsInput")
+	}
+	return json.Marshal(aux)
+}
+
+func convertMapKeysToString(originalMap interface{}) interface{} {
+	switch m := originalMap.(type) {
+	case map[felt.Felt]core.Cairo0Class:
+		newMap := make(map[string]core.Cairo0Class)
+		for k, v := range m {
+			newMap[k.String()] = v // Assuming Felt has a String() method
+		}
+		return newMap
+	case map[felt.Felt]core.CompiledClass:
+		newMap := make(map[string]core.CompiledClass)
+		for k, v := range m {
+			newMap[k.String()] = v
+		}
+		return newMap
+	case map[felt.Felt][]felt.Felt:
+		newMap := make(map[string][]felt.Felt)
+		for k, v := range m {
+			newMap[k.String()] = v
+		}
+		return newMap
+	case map[felt.Felt]ContractState:
+		newMap := make(map[string]ContractState)
+		for k, v := range m {
+			newMap[k.String()] = v
+		}
+		return newMap
+	case map[felt.Felt]felt.Felt:
+		newMap := make(map[string]felt.Felt)
+		for k, v := range m {
+			newMap[k.String()] = v
+		}
+		return newMap
+	default:
+		return nil
+	}
 }
