@@ -11,31 +11,13 @@ import (
 	"github.com/NethermindEth/juno/vm"
 )
 
-// GenerateStarknetOSInput generates the starknet OS input, given a block, state and classes.
-func GenerateStarknetOSInput(bc *blockchain.Blockchain, blockNumber uint64, vm vm.VM, vmInput VMParameters) (*StarknetOsInput, error) {
-
-	oldBlock, err := bc.BlockByNumber(blockNumber)
-	if err != nil {
-		return nil, err
-	}
-	su, err := bc.StateUpdateByNumber(blockNumber)
-	if err != nil {
-		return nil, err
-	}
-
+func GetDeclaredClasses(su *core.StateUpdate, oldState core.StateReader) ([]core.Class, error) {
 	var classesToGet []*felt.Felt
 	for classHash := range su.StateDiff.DeclaredV1Classes {
 		classesToGet = append(classesToGet, &classHash)
 	}
 	classesToGet = append(classesToGet, su.StateDiff.DeclaredV0Classes...)
-	oldState, oldCloser, err := bc.StateAtBlockNumber(blockNumber)
-	if err != nil {
-		return nil, err
-	}
-	newState, newCloser, err := bc.StateAtBlockNumber(blockNumber + 1)
-	if err != nil {
-		return nil, err
-	}
+
 	var declaredClasses []core.Class
 	for _, classHash := range classesToGet {
 		decClass, err := oldState.Class(classHash)
@@ -44,10 +26,24 @@ func GenerateStarknetOSInput(bc *blockchain.Blockchain, blockNumber uint64, vm v
 		}
 		declaredClasses = append(declaredClasses, decClass.Class)
 	}
-	vmInput.Txns = oldBlock.Transactions
-	vmInput.DeclaredClasses = declaredClasses
-	vmInput.BlockInfo.Header = oldBlock.Header
-	vmInput.Network = bc.Network()
+	return declaredClasses, nil
+}
+
+// GenerateStarknetOSInput generates the starknet OS input, given a block, state and classes.
+func GenerateStarknetOSInput(bc *blockchain.Blockchain, blockNumber uint64, vm vm.VM, vmInput VMParameters) (*StarknetOsInput, error) {
+
+	oldBlock, err := bc.BlockByNumber(blockNumber)
+	if err != nil {
+		return nil, err
+	}
+	oldState, oldCloser, err := bc.StateAtBlockNumber(blockNumber)
+	if err != nil {
+		return nil, err
+	}
+	newState, newCloser, err := bc.StateAtBlockNumber(blockNumber + 1)
+	if err != nil {
+		return nil, err
+	}
 
 	txnExecInfo, err := TxnExecInfo(vm, &vmInput)
 	if err != nil {

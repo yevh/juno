@@ -1,14 +1,17 @@
 package osinput
 
 import (
+	"context"
 	"testing"
 
 	"github.com/NethermindEth/juno/blockchain"
+	"github.com/NethermindEth/juno/clients/feeder"
 	"github.com/NethermindEth/juno/core"
-	"github.com/NethermindEth/juno/core/felt"
 	"github.com/NethermindEth/juno/db/pebble"
 	"github.com/NethermindEth/juno/mocks"
+	adaptfeeder "github.com/NethermindEth/juno/starknetdata/feeder"
 	"github.com/NethermindEth/juno/utils"
+	"github.com/NethermindEth/juno/vm"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
@@ -17,9 +20,15 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	network := utils.Sepolia
+	network := utils.Mainnet
 
 	testDB := pebble.NewMemTest(t)
+	chain := blockchain.New(testDB, &network)
+	client := feeder.NewTestClient(t, &network)
+	gw := adaptfeeder.New(client)
+
+	mockVM := mocks.NewMockVM(mockCtrl)
+
 	txn, err := testDB.NewTransaction(false)
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -27,81 +36,29 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 	})
 	oldState := core.NewState(txn)
 
-	txnNew, err := testDB.NewTransaction(true)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		require.NoError(t, txnNew.Discard())
-	})
-	newState := core.NewState(txnNew)
+	// exampleConfig := LoadExampleStarknetOSConfig()
+	// Todo: get test data for first mainet block (may need to feed this into run_os.py somehow)
+	expectedOSInptsEmpty := StarknetOsInput{}
 
-	mockVM := mocks.NewMockVM(mockCtrl)
+	t.Run("mainnet block 0", func(t *testing.T) {
+		block0, err := gw.BlockByNumber(context.Background(), uint64(0))
+		require.NoError(t, err)
+		su0, err := gw.StateUpdate(context.Background(), uint64(0))
+		require.NoError(t, err)
+		require.NoError(t, chain.Store(block0, &core.BlockCommitments{}, su0, nil))
 
-	// Test data from run_os.py,  with state (only 0 and 1 contracts), no transactions and no classes.
-	exampleConfig := LoadExampleStarknetOSConfig()
-	expectedOSInptsEmpty := StarknetOsInput{
-		// "0x0" has no state (no nonce, no classhash)
-		// "0x1" has storage, and class hash "0x0", and nonce "0x0". The "old_root" for block 0 is "0x0" suggesting it has no state?
-		ContractStateCommitmentInfo: CommitmentInfo{
-			PreviousRoot:    *new(felt.Felt).SetUint64(0),
-			UpdatedRoot:     *new(felt.Felt).SetUint64(0),
-			TreeHeight:      251,
-			CommitmentFacts: map[felt.Felt][]felt.Felt{},
-		},
-		// "0x0" has no storage / classhash, and therefore no corresponding class
-		// "0x1" has storage, and class hash "0x0", but no class exists with class hash "0x0"
-		ContractClassCommitmentInfo: CommitmentInfo{
-			PreviousRoot:    *new(felt.Felt).SetUint64(0),
-			UpdatedRoot:     *new(felt.Felt).SetUint64(0),
-			TreeHeight:      251,
-			CommitmentFacts: map[felt.Felt][]felt.Felt{},
-		},
-		DeprecatedCompiledClasses: nil,
-		CompiledClasses:           nil,
-		CompiledClassVisitedPcs:   nil,
-		// run_os.py returns zeros, even for non-deployed contracts
-		Contracts: map[felt.Felt]ContractState{
-			*new(felt.Felt).SetUint64(0): {
-				ContractHash: *new(felt.Felt).SetUint64(0),
-				StorageCommitmentTree: PatriciaTree{
-					Root:   *new(felt.Felt).SetUint64(0),
-					Height: 251,
-				},
-				Nonce: *new(felt.Felt).SetUint64(0),
-			},
-			*new(felt.Felt).SetUint64(1): {
-				ContractHash: *new(felt.Felt).SetUint64(0),
-				StorageCommitmentTree: PatriciaTree{
-					Root:   *new(felt.Felt).SetUint64(0),
-					Height: 251,
-				},
-				Nonce: *new(felt.Felt).SetUint64(0),
-			},
-		},
-		ClassHashToCompiledClassHash: map[felt.Felt]felt.Felt{},
-		GeneralConfig:                exampleConfig,
-		Transactions:                 nil,
-		BlockHash:                    *utils.HexToFelt(t, "2535437458273622887584459710067137978693525181086955024571735059458497227738"),
-	}
+		block1, err := gw.BlockByNumber(context.Background(), uint64(1))
+		require.NoError(t, err)
+		su1, err := gw.StateUpdate(context.Background(), uint64(1))
+		require.NoError(t, err)
+		require.NoError(t, chain.Store(block1, &core.BlockCommitments{}, su1, nil))
 
-	t.Run("only 0x0 and 0x2 contracts", func(t *testing.T) {
-		su := &core.StateUpdate{
-			OldRoot: &felt.Zero,
-			NewRoot: &felt.Zero,
-			// BlockHash: &felt.Zero, // Not used
-			StateDiff: &core.StateDiff{
-				StorageDiffs:      nil,
-				Nonces:            nil,
-				DeployedContracts: nil,
-				DeclaredV0Classes: nil,
-				DeclaredV1Classes: nil,
-			},
-		}
-		err := newState.Update(0, su, nil)
+		declaredClasses, err := GetDeclaredClasses(su0, oldState)
 		require.NoError(t, err)
 
 		vmParas := VMParameters{
-			Txns:            nil,
-			DeclaredClasses: nil,
+			Txns:            block0.Transactions,
+			DeclaredClasses: declaredClasses,
 			PaidFeesOnL1:    nil,
 			State:           oldState,
 			Network:         &network,
@@ -109,20 +66,14 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 			SkipValidate:    false,
 			ErrOnRevert:     false,
 			UseBlobData:     false,
+			BlockInfo:       &vm.BlockInfo{Header: block0.Header},
 		}
-		block := core.Block{
-			Header: &core.Header{
-				Hash: utils.HexToFelt(t, "0x59b01ba262c999f2617412ffbba780f80b0103d928cbce1aecbaa50de90abda"),
-			},
-		}
-
-		bc := blockchain.New(testDB, &network)
-		require.NoError(t, bc.Store(&block, nil, su, nil)) // Todo
 
 		mockVM.EXPECT().Execute(vmParas.Txns, vmParas.DeclaredClasses, vmParas.PaidFeesOnL1,
-			vmParas.BlockInfo, oldState, vmParas.Network, vmParas.SkipChargeFee, vmParas.SkipValidate, vmParas.ErrOnRevert, vmParas.UseBlobData).Return(nil, nil, nil, nil)
+			vmParas.BlockInfo, vmParas.State, vmParas.Network, vmParas.SkipChargeFee, vmParas.SkipValidate,
+			vmParas.ErrOnRevert, vmParas.UseBlobData).Return(nil, nil, nil, nil)
 
-		osinput, err := GenerateStarknetOSInput(bc, 0, mockVM, vmParas)
+		osinput, err := GenerateStarknetOSInput(chain, 0, mockVM, vmParas)
 		require.NoError(t, err)
 
 		require.Equal(t, expectedOSInptsEmpty.ContractStateCommitmentInfo, osinput.ContractStateCommitmentInfo)
@@ -136,6 +87,51 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		require.Equal(t, expectedOSInptsEmpty.Transactions, osinput.Transactions)
 		require.Equal(t, expectedOSInptsEmpty.BlockHash.String(), osinput.BlockHash.String())
 	})
+
+	// expectedOSInptsEmpty := StarknetOsInput{
+	// 	// "0x0" has no state (no nonce, no classhash)
+	// 	// "0x1" has storage, and class hash "0x0", and nonce "0x0". The "old_root" for block 0 is "0x0" suggesting it has no state?
+	// 	ContractStateCommitmentInfo: CommitmentInfo{
+	// 		PreviousRoot:    *new(felt.Felt).SetUint64(0),
+	// 		UpdatedRoot:     *new(felt.Felt).SetUint64(0),
+	// 		TreeHeight:      251,
+	// 		CommitmentFacts: map[felt.Felt][]felt.Felt{},
+	// 	},
+	// 	// "0x0" has no storage / classhash, and therefore no corresponding class
+	// 	// "0x1" has storage, and class hash "0x0", but no class exists with class hash "0x0"
+	// 	ContractClassCommitmentInfo: CommitmentInfo{
+	// 		PreviousRoot:    *new(felt.Felt).SetUint64(0),
+	// 		UpdatedRoot:     *new(felt.Felt).SetUint64(0),
+	// 		TreeHeight:      251,
+	// 		CommitmentFacts: map[felt.Felt][]felt.Felt{},
+	// 	},
+	// 	DeprecatedCompiledClasses: nil,
+	// 	CompiledClasses:           nil,
+	// 	CompiledClassVisitedPcs:   nil,
+	// 	// run_os.py returns zeros, even for non-deployed contracts
+	// 	Contracts: map[felt.Felt]ContractState{
+	// 		*new(felt.Felt).SetUint64(0): {
+	// 			ContractHash: *new(felt.Felt).SetUint64(0),
+	// 			StorageCommitmentTree: PatriciaTree{
+	// 				Root:   *new(felt.Felt).SetUint64(0),
+	// 				Height: 251,
+	// 			},
+	// 			Nonce: *new(felt.Felt).SetUint64(0),
+	// 		},
+	// 		*new(felt.Felt).SetUint64(1): {
+	// 			ContractHash: *new(felt.Felt).SetUint64(0),
+	// 			StorageCommitmentTree: PatriciaTree{
+	// 				Root:   *new(felt.Felt).SetUint64(0),
+	// 				Height: 251,
+	// 			},
+	// 			Nonce: *new(felt.Felt).SetUint64(0),
+	// 		},
+	// 	},
+	// 	ClassHashToCompiledClassHash: map[felt.Felt]felt.Felt{},
+	// 	GeneralConfig:                exampleConfig,
+	// 	Transactions:                 nil,
+	// 	BlockHash:                    *utils.HexToFelt(t, "2535437458273622887584459710067137978693525181086955024571735059458497227738"),
+	// }
 
 	// Declare and deploy dummy_token.json
 	// expectedOSInptsDummyToken := StarknetOsInput{
