@@ -21,7 +21,7 @@ func NewStateSnapshot(state StateHistoryReader, blockNumber uint64) StateReader 
 }
 
 func (s *stateSnapshot) StorageTrie() (*trie.Trie, func() error, error) {
-	panic("unimplemented")
+	return s.state.StorageTrie()
 }
 
 func (s *stateSnapshot) ContractClassHash(addr *felt.Felt) (*felt.Felt, error) {
