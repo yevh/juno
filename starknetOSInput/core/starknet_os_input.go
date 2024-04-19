@@ -3,7 +3,6 @@ package osinput
 import (
 	"errors"
 
-	"github.com/NethermindEth/juno/blockchain"
 	"github.com/NethermindEth/juno/core"
 	"github.com/NethermindEth/juno/core/felt"
 	"github.com/NethermindEth/juno/core/trie"
@@ -30,35 +29,14 @@ func GetDeclaredClasses(su *core.StateUpdate, oldState core.StateReader) ([]core
 }
 
 // GenerateStarknetOSInput generates the starknet OS input, given a block, state and classes.
-func GenerateStarknetOSInput(bc *blockchain.Blockchain, blockNumber uint64, vm vm.VM, vmInput VMParameters) (*StarknetOsInput, error) {
-
-	oldBlock, err := bc.BlockByNumber(blockNumber)
-	if err != nil {
-		return nil, err
-	}
-	oldState, oldCloser, err := bc.StateAtBlockNumber(blockNumber)
-	if err != nil {
-		return nil, err
-	}
-	newState, newCloser, err := bc.StateAtBlockNumber(blockNumber + 1)
-	if err != nil {
-		return nil, err
-	}
-
+func GenerateStarknetOSInput(oldState core.StateReader, newState core.StateReader, oldBlock core.Block, vm vm.VM, vmInput VMParameters) (*StarknetOsInput, error) {
 	txnExecInfo, err := TxnExecInfo(vm, &vmInput)
 	if err != nil {
 		return nil, err
 	}
 
-	osInput, err := calculateOSInput(*oldBlock, oldState, newState, *txnExecInfo)
+	osInput, err := calculateOSInput(oldBlock, oldState, newState, *txnExecInfo)
 	if err != nil {
-		return nil, err
-	}
-
-	if err = oldCloser(); err != nil {
-		return nil, err
-	}
-	if err = newCloser(); err != nil {
 		return nil, err
 	}
 	return osInput, nil

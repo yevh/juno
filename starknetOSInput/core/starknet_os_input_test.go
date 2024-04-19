@@ -35,7 +35,17 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 	// Todo: get test data for first mainet block (may need to feed this into run_os.py somehow)
 	expectedOSInptsEmpty := StarknetOsInput{}
 
-	t.Run("mainnet block 0", func(t *testing.T) {
+	t.Run("empty state to mainnet block 0", func(t *testing.T) {
+
+		// old empty state
+		txn, err := testDB.NewTransaction(false)
+		require.NoError(t, err)
+		t.Cleanup(func() {
+			require.NoError(t, txn.Discard())
+		})
+		oldState := core.NewState(txn)
+
+		// get and apply block0 to get new state
 		block0, err := gw.BlockByNumber(context.Background(), uint64(0))
 		require.NoError(t, err)
 		su0, err := gw.StateUpdate(context.Background(), uint64(0))
@@ -45,20 +55,12 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, chain.Store(block0, &core.BlockCommitments{}, su0, map[felt.Felt]core.Class{*classHash0: class0}))
 
-		block1, err := gw.BlockByNumber(context.Background(), uint64(1))
-		require.NoError(t, err)
-		su1, err := gw.StateUpdate(context.Background(), uint64(1))
-		require.NoError(t, err)
-		require.NoError(t, chain.Store(block1, &core.BlockCommitments{}, su1, nil)) // No new classes declared (/deployed) here
-
-		oldState, closer, err := chain.StateAtBlockNumber(0)
-		require.NoError(t, err)
-		declaredClasses, err := GetDeclaredClasses(su0, oldState)
+		newState, closer, err := chain.StateAtBlockNumber(0)
 		require.NoError(t, err)
 
 		vmParas := VMParameters{
 			Txns:            block0.Transactions,
-			DeclaredClasses: declaredClasses,
+			DeclaredClasses: []core.Class{class0},
 			PaidFeesOnL1:    nil,
 			State:           oldState,
 			Network:         &network,
@@ -73,7 +75,7 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 			vmParas.BlockInfo, vmParas.State, vmParas.Network, vmParas.SkipChargeFee, vmParas.SkipValidate,
 			vmParas.ErrOnRevert, vmParas.UseBlobData).Return(nil, nil, nil, nil)
 
-		osinput, err := GenerateStarknetOSInput(chain, 0, mockVM, vmParas)
+		osinput, err := GenerateStarknetOSInput(oldState, newState, *block0, mockVM, vmParas)
 		require.NoError(t, err)
 
 		qwe, err := json.MarshalIndent(osinput, "", "")
