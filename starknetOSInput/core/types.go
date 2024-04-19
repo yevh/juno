@@ -126,6 +126,27 @@ func (s *StarknetOsInput) MarshalJSON() ([]byte, error) {
 	return json.Marshal(aux)
 }
 
+func (ci CommitmentInfo) MarshalJSON() ([]byte, error) {
+
+	newCommitmentFacts := make(map[string][]felt.Felt)
+	for key, value := range ci.CommitmentFacts {
+		newCommitmentFacts[key.String()] = value
+	}
+
+	type Alias CommitmentInfo
+	return json.Marshal(&struct {
+		PreviousRoot    string                 `json:"previous_root"`
+		UpdatedRoot     string                 `json:"updated_root"`
+		CommitmentFacts map[string][]felt.Felt `json:"commitment_facts"`
+		*Alias
+	}{
+		PreviousRoot:    ci.PreviousRoot.String(),
+		UpdatedRoot:     ci.UpdatedRoot.String(),
+		CommitmentFacts: newCommitmentFacts,
+		Alias:           (*Alias)(&ci),
+	})
+}
+
 func convertMapKeysToString(originalMap interface{}) interface{} {
 	switch m := originalMap.(type) {
 	case map[felt.Felt]core.Cairo0Class:

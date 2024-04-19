@@ -77,7 +77,7 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 
 		osinput, err := GenerateStarknetOSInput(chain, 0, mockVM, vmParas)
 		require.NoError(t, err)
-		fmt.Println(osinput, err)
+
 		qwe, err := json.MarshalIndent(osinput, "", "")
 		require.NoError(t, err)
 		fmt.Println(string(qwe))
