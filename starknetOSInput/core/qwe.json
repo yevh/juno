@@ -22,14 +22,14 @@
     },
     "class_hash_to_compiled_class_hash": {},
     "contract_state_commitment_info": {
-        "previous_root": "0x525aed4da9cc6cce2de31ba79059546b0828903279e4eaa38768de33e2cac32",
-        "updated_root": "0x525aed4da9cc6cce2de31ba79059546b0828903279e4eaa38768de33e2cac32",
+        "previous_root": "0x0",
+        "updated_root": "0x21870ba80540e7831fb21c591ee93481f5ae1bb71ff85a86ddd465be4eddee6",
         "commitment_facts": {},
         "tree_height": 251
     },
     "contract_class_commitment_info": {
-        "previous_root": "0x525aed4da9cc6cce2de31ba79059546b0828903279e4eaa38768de33e2cac32",
-        "updated_root": "0x525aed4da9cc6cce2de31ba79059546b0828903279e4eaa38768de33e2cac32",
+        "previous_root": "0x0",
+        "updated_root": "0x21870ba80540e7831fb21c591ee93481f5ae1bb71ff85a86ddd465be4eddee6",
         "commitment_facts": {},
         "tree_height": 251
     },
