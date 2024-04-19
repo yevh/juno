@@ -288,12 +288,12 @@ func getContracts(reader core.StateReader, contractAddresses []felt.Felt) (map[f
 			// run_os.py returns zeros for undeployed contracts
 			if err == db.ErrKeyNotFound {
 				contractState[addr] = ContractState{
-					ContractHash: felt.Zero,
+					ContractHash: *new(felt.Felt).SetUint64(0),
 					StorageCommitmentTree: PatriciaTree{
-						Root:   felt.Zero,
+						Root:   *new(felt.Felt).SetUint64(0),
 						Height: 251,
 					},
-					Nonce: felt.Zero}
+					Nonce: *new(felt.Felt).SetUint64(0)}
 				continue
 			}
 			return nil, err

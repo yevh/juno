@@ -9,6 +9,7 @@ import (
 	"github.com/NethermindEth/juno/blockchain"
 	"github.com/NethermindEth/juno/clients/feeder"
 	"github.com/NethermindEth/juno/core"
+	"github.com/NethermindEth/juno/core/felt"
 	"github.com/NethermindEth/juno/db/pebble"
 	"github.com/NethermindEth/juno/mocks"
 	adaptfeeder "github.com/NethermindEth/juno/starknetdata/feeder"
@@ -28,15 +29,7 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 	chain := blockchain.New(testDB, &network)
 	client := feeder.NewTestClient(t, &network)
 	gw := adaptfeeder.New(client)
-
 	mockVM := mocks.NewMockVM(mockCtrl)
-
-	txn, err := testDB.NewTransaction(false)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		require.NoError(t, txn.Discard())
-	})
-	oldState := core.NewState(txn)
 
 	// exampleConfig := LoadExampleStarknetOSConfig()
 	// Todo: get test data for first mainet block (may need to feed this into run_os.py somehow)
@@ -47,14 +40,19 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		require.NoError(t, err)
 		su0, err := gw.StateUpdate(context.Background(), uint64(0))
 		require.NoError(t, err)
-		require.NoError(t, chain.Store(block0, &core.BlockCommitments{}, su0, nil))
+		classHash0 := utils.HexToFelt(t, "0x10455c752b86932ce552f2b0fe81a880746649b9aee7e0d842bf3f52378f9f8")
+		class0, err := gw.Class(context.Background(), utils.HexToFelt(t, "0x10455c752b86932ce552f2b0fe81a880746649b9aee7e0d842bf3f52378f9f8"))
+		require.NoError(t, err)
+		require.NoError(t, chain.Store(block0, &core.BlockCommitments{}, su0, map[felt.Felt]core.Class{*classHash0: class0}))
 
 		block1, err := gw.BlockByNumber(context.Background(), uint64(1))
 		require.NoError(t, err)
 		su1, err := gw.StateUpdate(context.Background(), uint64(1))
 		require.NoError(t, err)
-		require.NoError(t, chain.Store(block1, &core.BlockCommitments{}, su1, nil))
+		require.NoError(t, chain.Store(block1, &core.BlockCommitments{}, su1, nil)) // No new classes declared (/deployed) here
 
+		oldState, closer, err := chain.StateAtBlockNumber(0)
+		require.NoError(t, err)
 		declaredClasses, err := GetDeclaredClasses(su0, oldState)
 		require.NoError(t, err)
 
@@ -92,6 +90,7 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		require.Equal(t, expectedOSInptsEmpty.GeneralConfig, osinput.GeneralConfig)
 		require.Equal(t, expectedOSInptsEmpty.Transactions, osinput.Transactions)
 		require.Equal(t, expectedOSInptsEmpty.BlockHash.String(), osinput.BlockHash.String())
+		require.NoError(t, closer())
 	})
 
 	// expectedOSInptsEmpty := StarknetOsInput{
