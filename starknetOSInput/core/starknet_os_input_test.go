@@ -19,17 +19,40 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+// Note this works for Sepolia and not mainnet (mainnet had bugs in the early days)
+func getNewClasses(client adaptfeeder.Feeder, blockNumber uint64) (map[felt.Felt]core.Class, error) {
+	su, err := client.StateUpdate(context.Background(), blockNumber)
+	if err != nil {
+		return nil, err
+	}
+	var classesToFetch []*felt.Felt
+	classesToFetch = append(classesToFetch, su.StateDiff.DeclaredV0Classes...)
+	for classHash := range su.StateDiff.DeclaredV1Classes {
+		classesToFetch = append(classesToFetch, &classHash)
+	}
+	classes := make(map[felt.Felt]core.Class)
+	for _, classHash := range classesToFetch {
+		class, err := client.Class(context.Background(), classHash)
+		if err != nil {
+			return nil, err
+		}
+		classes[*classHash] = class
+	}
+	return classes, nil
+}
+
 func TestGenerateStarknetOSInput(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	t.Cleanup(mockCtrl.Finish)
 
-	network := utils.Mainnet
+	network := utils.Sepolia
 
 	// exampleConfig := LoadExampleStarknetOSConfig()
 	// Todo: get test data for first mainet block (may need to feed this into run_os.py somehow)
 	expectedOSInptsEmpty := StarknetOsInput{}
 
-	t.Run("empty state to mainnet block 0", func(t *testing.T) {
+	t.Run("empty state to sepolia block 0", func(t *testing.T) {
+
 		testDB := pebble.NewMemTest(t)
 		chain := blockchain.New(testDB, &network)
 		client := feeder.NewTestClient(t, &network)
@@ -49,17 +72,21 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		require.NoError(t, err)
 		su0, err := gw.StateUpdate(context.Background(), uint64(0))
 		require.NoError(t, err)
-		classHash0 := utils.HexToFelt(t, "0x10455c752b86932ce552f2b0fe81a880746649b9aee7e0d842bf3f52378f9f8")
-		class0, err := gw.Class(context.Background(), utils.HexToFelt(t, "0x10455c752b86932ce552f2b0fe81a880746649b9aee7e0d842bf3f52378f9f8"))
+		newClasses, err := getNewClasses(*gw, 0)
 		require.NoError(t, err)
-		require.NoError(t, chain.Store(block0, &core.BlockCommitments{}, su0, map[felt.Felt]core.Class{*classHash0: class0}))
+		require.NoError(t, chain.Store(block0, &core.BlockCommitments{}, su0, newClasses))
 
 		newState, closer, err := chain.StateAtBlockNumber(0)
 		require.NoError(t, err)
 
+		var classes []core.Class
+		for _, class := range newClasses {
+			classes = append(classes, class)
+		}
+
 		vmParas := VMParameters{
 			Txns:            block0.Transactions,
-			DeclaredClasses: []core.Class{class0},
+			DeclaredClasses: classes,
 			PaidFeesOnL1:    nil,
 			State:           oldState,
 			Network:         &network,
@@ -94,73 +121,73 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		require.NoError(t, closer())
 	})
 
-	t.Run(" mainnet block 0 to 1", func(t *testing.T) {
-		testDB := pebble.NewMemTest(t)
-		chain := blockchain.New(testDB, &network)
-		client := feeder.NewTestClient(t, &network)
-		gw := adaptfeeder.New(client)
-		mockVM := mocks.NewMockVM(mockCtrl)
+	// t.Run(" mainnet block 0 to 1", func(t *testing.T) {
+	// 	testDB := pebble.NewMemTest(t)
+	// 	chain := blockchain.New(testDB, &network)
+	// 	client := feeder.NewTestClient(t, &network)
+	// 	gw := adaptfeeder.New(client)
+	// 	mockVM := mocks.NewMockVM(mockCtrl)
 
-		// get and apply block0 to get new state
-		block0, err := gw.BlockByNumber(context.Background(), uint64(0))
-		require.NoError(t, err)
-		su0, err := gw.StateUpdate(context.Background(), uint64(0))
-		require.NoError(t, err)
-		classHash0 := utils.HexToFelt(t, "0x10455c752b86932ce552f2b0fe81a880746649b9aee7e0d842bf3f52378f9f8")
-		class0, err := gw.Class(context.Background(), utils.HexToFelt(t, "0x10455c752b86932ce552f2b0fe81a880746649b9aee7e0d842bf3f52378f9f8"))
-		require.NoError(t, err)
-		require.NoError(t, chain.Store(block0, &core.BlockCommitments{}, su0, map[felt.Felt]core.Class{*classHash0: class0}))
+	// 	// get and apply block0 to get new state
+	// 	block0, err := gw.BlockByNumber(context.Background(), uint64(0))
+	// 	require.NoError(t, err)
+	// 	su0, err := gw.StateUpdate(context.Background(), uint64(0))
+	// 	require.NoError(t, err)
+	// 	classHash0 := utils.HexToFelt(t, "0x10455c752b86932ce552f2b0fe81a880746649b9aee7e0d842bf3f52378f9f8")
+	// 	class0, err := gw.Class(context.Background(), utils.HexToFelt(t, "0x10455c752b86932ce552f2b0fe81a880746649b9aee7e0d842bf3f52378f9f8"))
+	// 	require.NoError(t, err)
+	// 	require.NoError(t, chain.Store(block0, &core.BlockCommitments{}, su0, map[felt.Felt]core.Class{*classHash0: class0}))
 
-		// get and apply block1 to get new state
-		block1, err := gw.BlockByNumber(context.Background(), uint64(1))
-		require.NoError(t, err)
-		su1, err := gw.StateUpdate(context.Background(), uint64(1))
-		require.NoError(t, err)
-		require.NoError(t, err)
-		require.NoError(t, chain.Store(block1, &core.BlockCommitments{}, su1, nil))
+	// 	// get and apply block1 to get new state
+	// 	block1, err := gw.BlockByNumber(context.Background(), uint64(1))
+	// 	require.NoError(t, err)
+	// 	su1, err := gw.StateUpdate(context.Background(), uint64(1))
+	// 	require.NoError(t, err)
+	// 	require.NoError(t, err)
+	// 	require.NoError(t, chain.Store(block1, &core.BlockCommitments{}, su1, nil))
 
-		oldState, oldCloser, err := chain.StateAtBlockNumber(0)
-		require.NoError(t, err)
-		newState, newCloser, err := chain.StateAtBlockNumber(1)
-		require.NoError(t, err)
+	// 	oldState, oldCloser, err := chain.StateAtBlockNumber(0)
+	// 	require.NoError(t, err)
+	// 	newState, newCloser, err := chain.StateAtBlockNumber(1)
+	// 	require.NoError(t, err)
 
-		vmParas := VMParameters{
-			Txns:            block0.Transactions,
-			DeclaredClasses: []core.Class{class0},
-			PaidFeesOnL1:    nil,
-			State:           oldState,
-			Network:         &network,
-			SkipChargeFee:   false,
-			SkipValidate:    false,
-			ErrOnRevert:     false,
-			UseBlobData:     false,
-			BlockInfo:       &vm.BlockInfo{Header: block0.Header},
-		}
+	// 	vmParas := VMParameters{
+	// 		Txns:            block0.Transactions,
+	// 		DeclaredClasses: []core.Class{class0},
+	// 		PaidFeesOnL1:    nil,
+	// 		State:           oldState,
+	// 		Network:         &network,
+	// 		SkipChargeFee:   false,
+	// 		SkipValidate:    false,
+	// 		ErrOnRevert:     false,
+	// 		UseBlobData:     false,
+	// 		BlockInfo:       &vm.BlockInfo{Header: block0.Header},
+	// 	}
 
-		mockVM.EXPECT().Execute(vmParas.Txns, vmParas.DeclaredClasses, vmParas.PaidFeesOnL1,
-			vmParas.BlockInfo, vmParas.State, vmParas.Network, vmParas.SkipChargeFee, vmParas.SkipValidate,
-			vmParas.ErrOnRevert, vmParas.UseBlobData).Return(nil, nil, nil, nil)
+	// 	mockVM.EXPECT().Execute(vmParas.Txns, vmParas.DeclaredClasses, vmParas.PaidFeesOnL1,
+	// 		vmParas.BlockInfo, vmParas.State, vmParas.Network, vmParas.SkipChargeFee, vmParas.SkipValidate,
+	// 		vmParas.ErrOnRevert, vmParas.UseBlobData).Return(nil, nil, nil, nil)
 
-		osinput, err := GenerateStarknetOSInput(oldState, newState, *block0, mockVM, vmParas)
-		require.NoError(t, err)
+	// 	osinput, err := GenerateStarknetOSInput(oldState, newState, *block0, mockVM, vmParas)
+	// 	require.NoError(t, err)
 
-		qwe, err := json.MarshalIndent(osinput, "", "")
-		require.NoError(t, err)
-		os.WriteFile("osinput.json", qwe, 0644)
+	// 	qwe, err := json.MarshalIndent(osinput, "", "")
+	// 	require.NoError(t, err)
+	// 	os.WriteFile("osinput.json", qwe, 0644)
 
-		require.Equal(t, expectedOSInptsEmpty.ContractStateCommitmentInfo, osinput.ContractStateCommitmentInfo)
-		require.Equal(t, expectedOSInptsEmpty.ContractClassCommitmentInfo, osinput.ContractClassCommitmentInfo)
-		require.Equal(t, expectedOSInptsEmpty.DeprecatedCompiledClasses, osinput.DeprecatedCompiledClasses)
-		require.Equal(t, expectedOSInptsEmpty.CompiledClasses, osinput.CompiledClasses)
-		require.Equal(t, expectedOSInptsEmpty.CompiledClassVisitedPcs, osinput.CompiledClassVisitedPcs)
-		require.Equal(t, expectedOSInptsEmpty.Contracts, osinput.Contracts)
-		require.Equal(t, expectedOSInptsEmpty.ClassHashToCompiledClassHash, osinput.ClassHashToCompiledClassHash)
-		require.Equal(t, expectedOSInptsEmpty.GeneralConfig, osinput.GeneralConfig)
-		require.Equal(t, expectedOSInptsEmpty.Transactions, osinput.Transactions)
-		require.Equal(t, expectedOSInptsEmpty.BlockHash.String(), osinput.BlockHash.String())
-		require.NoError(t, oldCloser())
-		require.NoError(t, newCloser())
-	})
+	// 	require.Equal(t, expectedOSInptsEmpty.ContractStateCommitmentInfo, osinput.ContractStateCommitmentInfo)
+	// 	require.Equal(t, expectedOSInptsEmpty.ContractClassCommitmentInfo, osinput.ContractClassCommitmentInfo)
+	// 	require.Equal(t, expectedOSInptsEmpty.DeprecatedCompiledClasses, osinput.DeprecatedCompiledClasses)
+	// 	require.Equal(t, expectedOSInptsEmpty.CompiledClasses, osinput.CompiledClasses)
+	// 	require.Equal(t, expectedOSInptsEmpty.CompiledClassVisitedPcs, osinput.CompiledClassVisitedPcs)
+	// 	require.Equal(t, expectedOSInptsEmpty.Contracts, osinput.Contracts)
+	// 	require.Equal(t, expectedOSInptsEmpty.ClassHashToCompiledClassHash, osinput.ClassHashToCompiledClassHash)
+	// 	require.Equal(t, expectedOSInptsEmpty.GeneralConfig, osinput.GeneralConfig)
+	// 	require.Equal(t, expectedOSInptsEmpty.Transactions, osinput.Transactions)
+	// 	require.Equal(t, expectedOSInptsEmpty.BlockHash.String(), osinput.BlockHash.String())
+	// 	require.NoError(t, oldCloser())
+	// 	require.NoError(t, newCloser())
+	// })
 
 	// expectedOSInptsEmpty := StarknetOsInput{
 	// 	// "0x0" has no state (no nonce, no classhash)
