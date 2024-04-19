@@ -45,9 +45,10 @@ func GenerateStarknetOSInput(oldState core.StateReader, newState core.StateReade
 // Todo: update to use vm.TransactionTrace instead of TransactionExecutionInfo?
 func calculateOSInput(block core.Block, oldstate core.StateReader, newstate core.StateReader, execInfo []TransactionExecutionInfo) (*StarknetOsInput, error) {
 	osinput := &StarknetOsInput{}
+	osinput.GeneralConfig = LoadExampleStarknetOSConfig()
 
 	// Todo: complete
-	stateSelector, err := get_os_state_selector(osinput.Transactions, execInfo, &osinput.GeneralConfig)
+	stateSelector, err := get_os_state_selector(block.Transactions, execInfo, &osinput.GeneralConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -106,8 +107,6 @@ func calculateOSInput(block core.Block, oldstate core.StateReader, newstate core
 		return nil, err
 	}
 	osinput.Contracts = contractStates
-
-	osinput.GeneralConfig = LoadExampleStarknetOSConfig()
 
 	osinput.BlockHash = *block.Hash
 	return osinput, nil

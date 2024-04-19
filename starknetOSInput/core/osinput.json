@@ -18,18 +18,58 @@
                 "height": 251
             },
             "nonce": {}
+        },
+        "0x20cfa74ee3564b4cd5435cdace0f9c4d43b939620e4a0bb5076105df0a626c6": {
+            "contract_hash": {},
+            "storage_commitment_tree": {
+                "root": {},
+                "height": 251
+            },
+            "nonce": {}
+        },
+        "0x31c887d82502ceb218c06ebb46198da3f7b92864a8223746bc836dda3e34b52": {
+            "contract_hash": {},
+            "storage_commitment_tree": {
+                "root": {},
+                "height": 251
+            },
+            "nonce": {}
+        },
+        "0x31c9cdb9b00cb35cf31c05855c0ec3ecf6f7952a1ce6e3c53c3455fcd75a280": {
+            "contract_hash": {},
+            "storage_commitment_tree": {
+                "root": {},
+                "height": 251
+            },
+            "nonce": {}
+        },
+        "0x6ee3440b08a9c805305449ec7f7003f27e9f7e287b83610952ec36bdc5a6bae": {
+            "contract_hash": {},
+            "storage_commitment_tree": {
+                "root": {},
+                "height": 251
+            },
+            "nonce": {}
+        },
+        "0x735596016a37ee972c42adef6a3cf628c19bb3794369c65d2c82ba034aecf2c": {
+            "contract_hash": {},
+            "storage_commitment_tree": {
+                "root": {},
+                "height": 251
+            },
+            "nonce": {}
         }
     },
     "class_hash_to_compiled_class_hash": {},
     "contract_state_commitment_info": {
-        "previous_root": "0x0",
-        "updated_root": "0x21870ba80540e7831fb21c591ee93481f5ae1bb71ff85a86ddd465be4eddee6",
+        "previous_root": "0x525aed4da9cc6cce2de31ba79059546b0828903279e4eaa38768de33e2cac32",
+        "updated_root": "0x525aed4da9cc6cce2de31ba79059546b0828903279e4eaa38768de33e2cac32",
         "commitment_facts": {},
         "tree_height": 251
     },
     "contract_class_commitment_info": {
-        "previous_root": "0x0",
-        "updated_root": "0x21870ba80540e7831fb21c591ee93481f5ae1bb71ff85a86ddd465be4eddee6",
+        "previous_root": "0x525aed4da9cc6cce2de31ba79059546b0828903279e4eaa38768de33e2cac32",
+        "updated_root": "0x525aed4da9cc6cce2de31ba79059546b0828903279e4eaa38768de33e2cac32",
         "commitment_facts": {},
         "tree_height": 251
     },

@@ -236,8 +236,10 @@ func get_state_selector_transaction(txn *core.Transaction, generalConfig *Starkn
 
 // ref: https://github.com/starkware-libs/cairo-lang/blob/v0.12.3/src/starkware/starknet/business_logic/transaction/objects.py#L1421
 func get_state_selector_invoke(txn *core.InvokeTransaction, config *StarknetGeneralConfig) (*StateSelector, error) {
-	contractAddresses := []felt.Felt{*txn.SenderAddress}
-
+	contractAddresses := []felt.Felt{}
+	if txn.SenderAddress != nil {
+		contractAddresses = append(contractAddresses, *txn.SenderAddress)
+	}
 	if !txn.MaxFee.IsZero() {
 		contractAddresses = append(contractAddresses, config.StarknetOsConfig.FeeTokenAddress)
 	}
