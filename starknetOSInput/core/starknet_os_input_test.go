@@ -74,6 +74,7 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 		require.NoError(t, err)
 		newClasses, err := getNewClasses(*gw, 0)
 		require.NoError(t, err)
+
 		require.NoError(t, chain.Store(block0, &core.BlockCommitments{}, su0, newClasses))
 
 		newState, closer, err := chain.StateAtBlockNumber(0)

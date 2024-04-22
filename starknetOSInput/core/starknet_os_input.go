@@ -2,6 +2,7 @@ package osinput
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/NethermindEth/juno/core"
 	"github.com/NethermindEth/juno/core/felt"
@@ -10,7 +11,7 @@ import (
 	"github.com/NethermindEth/juno/vm"
 )
 
-func GetDeclaredClasses(su *core.StateUpdate, oldState core.StateReader) ([]core.Class, error) {
+func GetDeclaredClasses(su *core.StateUpdate, state core.StateReader) ([]core.Class, error) {
 	var classesToGet []*felt.Felt
 	for classHash := range su.StateDiff.DeclaredV1Classes {
 		classesToGet = append(classesToGet, &classHash)
@@ -19,7 +20,7 @@ func GetDeclaredClasses(su *core.StateUpdate, oldState core.StateReader) ([]core
 
 	var declaredClasses []core.Class
 	for _, classHash := range classesToGet {
-		decClass, err := oldState.Class(classHash)
+		decClass, err := state.Class(classHash)
 		if err != nil {
 			return nil, err
 		}
@@ -45,6 +46,8 @@ func GenerateStarknetOSInput(oldState core.StateReader, newState core.StateReade
 // Todo: update to use vm.TransactionTrace instead of TransactionExecutionInfo?
 func calculateOSInput(block core.Block, oldstate core.StateReader, newstate core.StateReader, execInfo []TransactionExecutionInfo) (*StarknetOsInput, error) {
 	osinput := &StarknetOsInput{}
+	osinput.DeprecatedCompiledClasses = make(map[felt.Felt]core.Cairo0Class)
+	osinput.CompiledClasses = make(map[felt.Felt]core.CompiledClass)
 	osinput.GeneralConfig = LoadExampleStarknetOSConfig()
 
 	// Todo: complete
@@ -53,7 +56,7 @@ func calculateOSInput(block core.Block, oldstate core.StateReader, newstate core
 		return nil, err
 	}
 
-	classHashToCompiledClassHash, err := getClassHashToCompiledClassHash(oldstate, stateSelector.ClassHashes)
+	classHashToCompiledClassHash, err := getClassHashToCompiledClassHash(newstate, stateSelector.ClassHashes)
 	if err != nil {
 		return nil, err
 	}
@@ -79,12 +82,14 @@ func calculateOSInput(block core.Block, oldstate core.StateReader, newstate core
 
 		switch decTxn := tx.(type) {
 		case *core.DeclareTransaction:
-			decClass, err := oldstate.Class(decTxn.ClassHash)
+			fmt.Println(decTxn.ClassHash.String())
+			decClass, err := newstate.Class(decTxn.ClassHash)
 			if err != nil {
 				return nil, err
 			}
 			switch class := decClass.Class.(type) {
 			case *core.Cairo0Class:
+				fmt.Print(*decTxn.ClassHash)
 				osinput.DeprecatedCompiledClasses[*decTxn.ClassHash] = *class
 			case *core.Cairo1Class:
 				osinput.CompiledClasses[*decTxn.ClassHash] = *class.Compiled
