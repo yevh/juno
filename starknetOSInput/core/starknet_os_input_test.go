@@ -3,6 +3,7 @@ package osinput
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
 
@@ -32,6 +33,7 @@ func getNewClasses(client adaptfeeder.Feeder, blockNumber uint64) (map[felt.Felt
 	}
 	classes := make(map[felt.Felt]core.Class)
 	for _, classHash := range classesToFetch {
+		fmt.Println("classHash", classHash)
 		class, err := client.Class(context.Background(), classHash)
 		if err != nil {
 			return nil, err
@@ -51,6 +53,7 @@ func TestGenerateStarknetOSInput(t *testing.T) {
 	// Todo: get test data for first mainet block (may need to feed this into run_os.py somehow)
 	expectedOSInptsEmpty := StarknetOsInput{}
 
+	// Two new (deprecated) classes, three new contracts, all three contracts have non-zero storage, but only one has non-zero nonce.
 	t.Run("empty state to sepolia block 0", func(t *testing.T) {
 
 		testDB := pebble.NewMemTest(t)
