@@ -19,28 +19,28 @@
     "compiled_class_visited_pcs": {},
     "contracts": {
         "0x0": {
-            "contract_hash": {},
+            "contract_hash": "0x0",
             "storage_commitment_tree": {
-                "root": {},
+                "root": "0x0",
                 "height": 251
             },
-            "nonce": {}
+            "nonce": "0x0"
         },
         "0x1": {
-            "contract_hash": {},
+            "contract_hash": "0x0",
             "storage_commitment_tree": {
-                "root": {},
+                "root": "0x0",
                 "height": 251
             },
-            "nonce": {}
+            "nonce": "0x0"
         },
         "0x43abaa073c768ebf039c0c4f46db9acc39e9ec165690418060a652aab39e7d8": {
-            "contract_hash": {},
+            "contract_hash": "0x0",
             "storage_commitment_tree": {
-                "root": {},
+                "root": "0x0",
                 "height": 251
             },
-            "nonce": {}
+            "nonce": "0x0"
         }
     },
     "class_hash_to_compiled_class_hash": {},

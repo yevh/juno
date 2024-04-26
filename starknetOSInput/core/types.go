@@ -115,7 +115,7 @@ func (s *StarknetOsInput) MarshalJSON() ([]byte, error) {
 		return nil, errors.New("type assertion error in custom marshalling of StarknetOsInput")
 	}
 
-	aux.Contracts = convertMapKeysToString(s.Contracts).(map[string]ContractState)
+	aux.Contracts, ok = convertMapKeysToString(s.Contracts).(map[string]ContractState)
 	if !ok {
 		return nil, errors.New("type assertion error in custom marshalling of StarknetOsInput")
 	}
@@ -147,6 +147,27 @@ func (ci CommitmentInfo) MarshalJSON() ([]byte, error) {
 	})
 }
 
+func (c ContractState) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		ContractHash          string       `json:"contract_hash"`
+		StorageCommitmentTree PatriciaTree `json:"storage_commitment_tree"`
+		Nonce                 string       `json:"nonce"`
+	}{
+		ContractHash:          c.ContractHash.String(),
+		StorageCommitmentTree: c.StorageCommitmentTree,
+		Nonce:                 c.Nonce.String(),
+	})
+}
+
+func (p PatriciaTree) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Root   string `json:"root"`
+		Height uint   `json:"height"`
+	}{
+		Root:   p.Root.String(),
+		Height: p.Height,
+	})
+}
 func convertMapKeysToString(originalMap interface{}) interface{} {
 	switch m := originalMap.(type) {
 	case map[felt.Felt]core.Cairo0Class:
