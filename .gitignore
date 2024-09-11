@@ -10,3 +10,6 @@ config/
 # README and/or run `./build/juno` command.
 juno/
 p2p-dbs
+
+# Ignore .terraform directories
+terraform/.terraform/
