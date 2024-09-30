@@ -82,6 +82,7 @@ const (
 	callMaxStepsF           = "rpc-call-max-steps"
 	corsEnableF             = "rpc-cors-enable"
 	versionedConstantsFileF = "versioned-constants-file"
+	p2pSyncModeF            = "p2p-sync-mode"
 
 	defaultConfig                   = ""
 	defaulHost                      = "localhost"
@@ -119,6 +120,7 @@ const (
 	defaultGwTimeout                = 5 * time.Second
 	defaultCorsEnable               = false
 	defaultVersionedConstantsFile   = ""
+	defaultP2pSyncMode              = "full"
 
 	configFlagUsage                       = "The YAML configuration file."
 	logLevelFlagUsage                     = "Options: trace, debug, info, warn, error."
@@ -152,6 +154,7 @@ const (
 	p2pFeederNodeUsage = "EXPERIMENTAL: Run juno as a feeder node which will only sync from feeder gateway and gossip the new" +
 		" blocks to the network."
 	p2pPrivateKeyUsage   = "EXPERIMENTAL: Hexadecimal representation of a private key on the Ed25519 elliptic curve."
+	p2pSyncModeUsage     = "EXPERIMENTAL: Synchronization mode: 'full' (default), 'snap'"
 	metricsUsage         = "Enables the Prometheus metrics endpoint on the default port."
 	metricsHostUsage     = "The interface on which the Prometheus endpoint will listen for requests."
 	metricsPortUsage     = "The port on which the Prometheus endpoint will listen for requests."
@@ -335,6 +338,7 @@ func NewCmd(config *node.Config, run func(*cobra.Command, []string) error) *cobr
 	junoCmd.Flags().String(p2pPeersF, defaultP2pPeers, p2pPeersUsage)
 	junoCmd.Flags().Bool(p2pFeederNodeF, defaultP2pFeederNode, p2pFeederNodeUsage)
 	junoCmd.Flags().String(p2pPrivateKey, defaultP2pPrivateKey, p2pPrivateKeyUsage)
+	junoCmd.Flags().String(p2pSyncModeF, defaultP2pSyncMode, p2pSyncModeUsage)
 	junoCmd.Flags().Bool(metricsF, defaultMetrics, metricsUsage)
 	junoCmd.Flags().String(metricsHostF, defaulHost, metricsHostUsage)
 	junoCmd.Flags().Uint16(metricsPortF, defaultMetricsPort, metricsPortUsage)
