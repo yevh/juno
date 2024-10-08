@@ -48,7 +48,7 @@ core-rust:
 	$(MAKE) -C core/rust $(VM_TARGET)
 
 compiler:
-	$(MAKE) -C starknet/rust $(VM_TARGET)
+	$(MAKE) -C starknet/compiler/rust $(VM_TARGET)
 
 generate: ## generate
 	mkdir -p mocks
@@ -94,13 +94,13 @@ tidy: ## add missing and remove unused modules
 format: ## run go & rust formatters
 	$(MAKE) -C vm/rust format
 	$(MAKE) -C core/rust format
-	$(MAKE) -C starknet/rust format
+	$(MAKE) -C starknet/compiler/rust format
 	gofumpt -l -w .
 
 clean: ## clean project builds
 	$(MAKE) -C vm/rust clean
 	$(MAKE) -C core/rust clean
-	$(MAKE) -C starknet/rust clean
+	$(MAKE) -C starknet/compiler/rust clean
 	@rm -rf ./build
 
 help: ## show this help
@@ -115,7 +115,6 @@ feedernode: juno-cached
 	--p2p-feeder-node \
 	--p2p-addr=/ip4/0.0.0.0/tcp/7777 \
 	--p2p-private-key="5f6cdc3aebcc74af494df054876100368ef6126e3a33fa65b90c765b381ffc37a0a63bbeeefab0740f24a6a38dabb513b9233254ad0020c721c23e69bc820089" \
-	--metrics-port=9090
 
 node1: juno-cached
 	./build/juno \
