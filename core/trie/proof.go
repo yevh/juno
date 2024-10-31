@@ -321,6 +321,9 @@ func VerifyProof(root *felt.Felt, key *Key, value *felt.Felt, proofs []ProofNode
 	remainingPath := NewKey(key.len, key.bitset[:])
 	for i, proofNode := range proofs {
 		if !proofNode.Hash(hash).Equal(expectedHash) {
+			proofHash := proofNode.Hash(hash)
+			fmt.Println("Proof verification failure", "node", proofHash, "expected", expectedHash)
+			fmt.Printf("%v\n", proofNode)
 			return false
 		}
 
@@ -340,12 +343,13 @@ func VerifyProof(root *felt.Felt, key *Key, value *felt.Felt, proofs []ProofNode
 
 			// Todo:
 			// If we are verifying the key doesn't exist, then we should
-			// update.Status subKey to point in the other direction
+			// update subKey to point in the other direction
 			if value == nil && i == len(proofs)-1 {
 				return true
 			}
 
 			if !proofNode.Path.Equal(subKey) && !subKey.Equal(&Key{}) {
+				fmt.Println("Proof verification failure", "node", proofNode.Path, "expected", subKey)
 				return false
 			}
 			expectedHash = proofNode.Child
