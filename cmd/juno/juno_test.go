@@ -30,7 +30,7 @@ func TestConfigPrecedence(t *testing.T) {
 	// tested for sanity. These tests are not intended to perform semantics
 	// checks on the config, those will be checked by the node implementation.
 	defaultHost := "localhost"
-	defaultLogLevel := utils.INFO
+	defaultLogLevel := "info"
 	defaultHTTP := false
 	defaultHTTPPort := uint16(6060)
 	defaultWS := false
@@ -83,7 +83,7 @@ func TestConfigPrecedence(t *testing.T) {
 				"--cn-core-contract-address", "0xc662c410C0ECf747543f5bA90660f6ABeBD9C8c4",
 			},
 			expectedConfig: &node.Config{
-				LogLevel:            utils.DEBUG,
+				LogLevel:            "debug",
 				HTTP:                defaultHTTP,
 				HTTPHost:            "0.0.0.0",
 				HTTPPort:            4576,
@@ -128,7 +128,7 @@ cn-core-contract-address: 0xc662c410C0ECf747543f5bA90660f6ABeBD9C8c4
 cn-unverifiable-range: [0,10]
 `,
 			expectedConfig: &node.Config{
-				LogLevel:            utils.DEBUG,
+				LogLevel:            "debug",
 				HTTP:                defaultHTTP,
 				HTTPHost:            "0.0.0.0",
 				HTTPPort:            4576,
@@ -268,7 +268,7 @@ network: sepolia
 pprof: true
 `,
 			expectedConfig: &node.Config{
-				LogLevel:            utils.DEBUG,
+				LogLevel:            "debug",
 				HTTP:                defaultHTTP,
 				HTTPHost:            "0.0.0.0",
 				HTTPPort:            4576,
@@ -304,7 +304,7 @@ http-host: 0.0.0.0
 http-port: 4576
 `,
 			expectedConfig: &node.Config{
-				LogLevel:            utils.DEBUG,
+				LogLevel:            "debug",
 				HTTP:                defaultHTTP,
 				HTTPHost:            "0.0.0.0",
 				HTTPPort:            4576,
@@ -339,7 +339,7 @@ http-port: 4576
 				"--db-path", "/home/.juno", "--network", "sepolia-integration", "--pprof", "--db-cache-size", "1024",
 			},
 			expectedConfig: &node.Config{
-				LogLevel:            utils.DEBUG,
+				LogLevel:            "debug",
 				HTTP:                defaultHTTP,
 				HTTPHost:            "0.0.0.0",
 				HTTPPort:            4576,
@@ -374,7 +374,7 @@ http-port: 4576
 				"--network", "sepolia",
 			},
 			expectedConfig: &node.Config{
-				LogLevel:            utils.DEBUG,
+				LogLevel:            "debug",
 				HTTP:                defaultHTTP,
 				HTTPHost:            "0.0.0.0",
 				HTTPPort:            4576,
@@ -433,7 +433,7 @@ db-cache-size: 1024
 				"--db-cache-size", "9",
 			},
 			expectedConfig: &node.Config{
-				LogLevel:            utils.ERROR,
+				LogLevel:            "error",
 				HTTP:                true,
 				HTTPHost:            "127.0.0.1",
 				HTTPPort:            4577,
@@ -471,7 +471,7 @@ network: sepolia
 `,
 			inputArgs: []string{"--db-path", "/home/flag/.juno"},
 			expectedConfig: &node.Config{
-				LogLevel:            utils.WARN,
+				LogLevel:            "warn",
 				HTTP:                defaultHTTP,
 				HTTPHost:            "0.0.0.0",
 				HTTPPort:            4576,

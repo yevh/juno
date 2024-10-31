@@ -18,7 +18,7 @@ import (
 // Create a new node with all services enabled.
 func TestNewNode(t *testing.T) {
 	config := &node.Config{
-		LogLevel:            utils.INFO,
+		LogLevel:            "info",
 		HTTP:                true,
 		HTTPPort:            0,
 		Websocket:           true,
@@ -39,7 +39,8 @@ func TestNewNode(t *testing.T) {
 		P2PPeers:            "",
 	}
 
-	n, err := node.New(config, "v0.3")
+	logLevel := utils.NewLogLevel(utils.INFO)
+	n, err := node.New(config, "v0.3", logLevel)
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -76,10 +77,11 @@ func TestNetworkVerificationOnNonEmptyDB(t *testing.T) {
 			cancel()
 			require.NoError(t, database.Close())
 
+			logLevel := utils.NewLogLevel(utils.INFO)
 			_, err = node.New(&node.Config{
 				DatabasePath: dbPath,
 				Network:      test.network,
-			}, "v0.1")
+			}, "v0.1", logLevel)
 			if test.errString == "" {
 				require.NoError(t, err)
 			} else {

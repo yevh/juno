@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -199,10 +200,34 @@ func main() {
 			return err
 		}
 
-		n, err := node.New(config, Version)
+		logLevel := utils.NewLogLevel(utils.INFO)
+		err = logLevel.Set(config.LogLevel)
 		if err != nil {
 			return err
 		}
+
+		n, err := node.New(config, Version, logLevel)
+		if err != nil {
+			return err
+		}
+
+		// Create a HTTP server to control the log level.
+		http.HandleFunc("/log", func(w http.ResponseWriter, r *http.Request) {
+			utils.HTTPLogSettings(w, r, logLevel)
+		})
+		go func() {
+			server := &http.Server{
+				Addr:         ":6789",
+				Handler:      nil,
+				ReadTimeout:  5 * time.Second,
+				WriteTimeout: 10 * time.Second,
+				IdleTimeout:  15 * time.Second,
+			}
+			err := server.ListenAndServe()
+			if err != nil && err != http.ErrServerClosed {
+				fmt.Printf("HTTP server ListenAndServe: %v", err)
+			}
+		}()
 
 		n.Run(cmd.Context())
 		return nil
@@ -304,13 +329,12 @@ func NewCmd(config *node.Config, run func(*cobra.Command, []string) error) *cobr
 
 	// For testing purposes, these variables cannot be declared outside the function because Cobra
 	// may mutate their values.
-	defaultLogLevel := utils.INFO
 	defaultNetwork := utils.Mainnet
 	defaultMaxVMs := 3 * runtime.GOMAXPROCS(0)
 	defaultCNUnverifiableRange := []int{} // Uint64Slice is not supported in Flags()
 
 	junoCmd.Flags().StringVar(&cfgFile, configF, defaultConfig, configFlagUsage)
-	junoCmd.Flags().Var(&defaultLogLevel, logLevelF, logLevelFlagUsage)
+	junoCmd.Flags().String(logLevelF, utils.INFO.String(), logLevelFlagUsage)
 	junoCmd.Flags().Bool(httpF, defaultHTTP, httpUsage)
 	junoCmd.Flags().String(httpHostF, defaulHost, httpHostUsage)
 	junoCmd.Flags().Uint16(httpPortF, defaultHTTPPort, httpPortUsage)

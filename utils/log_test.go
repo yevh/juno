@@ -10,12 +10,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var levelStrings = map[utils.LogLevel]string{
-	utils.DEBUG: "debug",
-	utils.INFO:  "info",
-	utils.WARN:  "warn",
-	utils.ERROR: "error",
-	utils.TRACE: "trace",
+var levelStrings = map[*utils.LogLevel]string{
+	utils.NewLogLevel(utils.DEBUG): "debug",
+	utils.NewLogLevel(utils.INFO):  "info",
+	utils.NewLogLevel(utils.WARN):  "warn",
+	utils.NewLogLevel(utils.ERROR): "error",
+	utils.NewLogLevel(utils.TRACE): "trace",
 }
 
 func TestLogLevelString(t *testing.T) {
@@ -30,20 +30,18 @@ func TestLogLevelString(t *testing.T) {
 // both implement the pflag.Value and encoding.TextUnmarshaller interfaces.
 // We can open a PR on github.com/thediveo/enumflag to add TextUnmarshaller
 // support.
-//
-//nolint:dupl
 func TestLogLevelSet(t *testing.T) {
 	for level, str := range levelStrings {
 		t.Run("level "+str, func(t *testing.T) {
-			l := new(utils.LogLevel)
+			l := utils.NewLogLevel(utils.TRACE)
 			require.NoError(t, l.Set(str))
-			assert.Equal(t, level, *l)
+			assert.Equal(t, *level, *l)
 		})
 		uppercase := strings.ToUpper(str)
 		t.Run("level "+uppercase, func(t *testing.T) {
-			l := new(utils.LogLevel)
+			l := utils.NewLogLevel(utils.TRACE)
 			require.NoError(t, l.Set(uppercase))
-			assert.Equal(t, level, *l)
+			assert.Equal(t, *level, *l)
 		})
 	}
 
@@ -56,15 +54,15 @@ func TestLogLevelSet(t *testing.T) {
 func TestLogLevelUnmarshalText(t *testing.T) {
 	for level, str := range levelStrings {
 		t.Run("level "+str, func(t *testing.T) {
-			l := new(utils.LogLevel)
+			l := utils.NewLogLevel(utils.TRACE)
 			require.NoError(t, l.UnmarshalText([]byte(str)))
-			assert.Equal(t, level, *l)
+			assert.Equal(t, *level, *l)
 		})
 		uppercase := strings.ToUpper(str)
 		t.Run("level "+uppercase, func(t *testing.T) {
-			l := new(utils.LogLevel)
+			l := utils.NewLogLevel(utils.TRACE)
 			require.NoError(t, l.UnmarshalText([]byte(uppercase)))
-			assert.Equal(t, level, *l)
+			assert.Equal(t, *level, *l)
 		})
 	}
 
